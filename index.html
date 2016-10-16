@@ -11,7 +11,8 @@
 			<div class="bigbutton">
 				<button type="button" id="thebutton" onclick="clickBigButton(false)"> Hold your horses </button> <br>
 				<button type="button" id="recruit" onclick="recruit()"> Hold your horses </button> <br>
-				<button type="button" id="sell" onclick="sellLoot()"> Hold your horses </button>
+				<button type="button" id="sell" onclick="sellLoot()"> Hold your horses </button> <br>
+				<span id="version"></span>
 			</div>
 			<div class="resources">
 				Game not loaded yet!
@@ -26,7 +27,7 @@
 				<button type="button" onclick="resetGame()"> Wipe Save </button>
 				<button type="button" id="autosave" onclick="toggleAutoSave()"> Autosave ON </button>
 				<h2> Log </h2>
-				<textarea id="msglog" rows="15" cols="30" readonly> </textarea>
+				<div id="msglog"> </div>
 			</div>
 			<div class="scrollbar">
 				<h2> Staff </h2>

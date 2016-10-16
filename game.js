@@ -87,6 +87,7 @@ var needRefresh = false;
 var lastWordsSaid = false;
 var tooltipVisible = false;
 const MAX_LOG_ENTRIES = 100;
+const VERSION = 1;
 
 function beautify(n) {
   var ns = n.toString();
@@ -187,6 +188,7 @@ function load() {
     var amt = game.staff[key];
     game.staffPrice[key] = increase(baseStaffPrices[key], amt);
   }
+  game.version = VERSION;
   console.log("Loaded: " + gameStr);
   loadStaff();
   loadUpgrades();
@@ -224,7 +226,7 @@ function refreshLog() {
     var recentMessages = msgLog.slice(
       Math.max(0, msgLog.length - MAX_LOG_ENTRIES));
     var box = document.getElementById("msglog");
-    box.innerHTML = recentMessages.reverse().join('\r\n');
+    box.innerHTML = recentMessages.reverse().join('<br>');
     needRefresh = false;
     if (game.died) lastWordsSaid = true;
   }
@@ -258,7 +260,9 @@ function resetGame() {
   game.cumulGold = 0;
   game.cumulGear = 0;
   game.timer = 0;
+  game.gps = bigInt.zero;
   game.special = {};
+  game.version = VERSION;
   var staffList = document.getElementById("staff");
   staffList.innerHTML = "";
   var upgradeList = document.getElementById("upgrades");
@@ -365,6 +369,9 @@ var staffNames = {
   legendary: "legendary wizard",
   transcendent: "transcendent wizard",
   pvpLord: "PvP warlord",
+  archmage: "Archmage wizard",
+  promethean: "Promethean wizard",
+  exalted: "Exalted wizard",
 };
 var staffDescriptions = {
   novice: "A beginner to farm for you.",
@@ -380,6 +387,9 @@ var staffDescriptions = {
   legendary: "A level 60 wizard who is now leaving C******a and entering Z*****a.",
   transcendent: "An even-higher level wizard to farm large amounts of gold.",
   pvpLord: "A PvP master to attract even more players.",
+  archmage: "Best of luck to this wizard on Azteca.",
+  promethean: "<b><i>OH NO WHAT HAPPENED TO AZTECA</i></b>",
+  exalted: "This wizard restored B****** and defeated M********, saving the spiral. Sizzle, young wizard, sizzle.",
 };
 var baseStaffPrices = {
   novice: [resAmt("gold", 30)],
@@ -395,6 +405,9 @@ var baseStaffPrices = {
   legendary: [resAmt("gold", 680000)],
   transcendent: [resAmt("gold", 1890000)],
   pvpLord: [resAmt("gold", 700000)],
+  archmage: [resAmt("gold", 5600000)],
+  promethean: [resAmt("gold", 27800000)],
+  exalted: [resAmt("gold", 345678901)],
 };
 
 function staffCount(name) {
@@ -415,6 +428,9 @@ var wizardClasses = {
   grandmaster: true,
   legendary: true,
   transcendent: true,
+  archmage: true,
+  promethean: true,
+  exalted: true,
 };
 function wizardCount() {
   var c = 0;
@@ -452,7 +468,10 @@ var staffRequirements = {
   transcendent: levelMinimum(70),
   pvpLord: function () {
     return game.upgrades.arena && game.resources.level.greaterOrEquals(60);
-  }
+  },
+  archmage: levelMinimum(80),
+  promethean: levelMinimum(90),
+  exalted: levelMinimum(100),
 }
 
 function updateStaffCount(name, amt) {
@@ -564,6 +583,19 @@ var upgradeNames = {
   critical: "Criticality",
   tc: "Treasure cards",
   luis: "Secrets from Luis",
+  sun2: "Sun magic part 2",
+  runLuis: "Run Run Dino!",
+  empire: "World empire",
+  wand: "Finger-shaped wand",
+  bastion: "B****** Restoration Project",
+  shadow: "Shadow magic",
+  sea: "Starf*** Sea",
+  ww: "W****w***s",
+  com1: "First Chamber of the Mind",
+  com2: "Second Chamber of the Mind",
+  com3: "Third Chamber of the Mind",
+  a1f: "Defeat M**********",
+  a2f: "Defeat Shadow Queen",
 };
 
 var upgradeDescriptions = {
@@ -590,6 +622,19 @@ var upgradeDescriptions = {
   critical: "Clicking has a <b>10% chance of doubling your yield.<b> Your brother has a <b>10% chance to get twice as much experience.</b>",
   tc: "All wizards earn <b>20% more gold.</b>",
   luis: "You automatically click <b>every 5 seconds.</b>",
+  sun2: "Sharpened Blade, Potent Trap, and Primordial, oh my! <b>You and archmage and higher wizards collect twice as much gold.</b>",
+  runLuis: "X*****a is falling, and <b>auto-clicking is twice as frequent.</b>",
+  empire: "Now that the whole world is playing ***ard101, <b>gold output is quadrupled.</b>",
+  wand: "Clicking is boosted by <b>0.1% of GPS.</b>",
+  bastion: "Claim whatever artifact you need and restore the B****** to its former glory.",
+  shadow: "Gold output is tripled for you and promethean or higher wizards, but <b>the game will take a hit in popularity.</b>",
+  sea: "Cross the treacherous sea inside the great beast. To the other side (and no, I don't mean dying)!",
+  ww: "Legendary or higher wizards <b>occasionally get gear</b>.",
+  com1: "Now you must land in the mind of the Shadow Queen, back when she was still a youngster, when she was in A*****, under the command of A******, and plot to kill the king.",
+  com2: "You are now at the R****wood School of Magic. You battle the Death professor M********* D****, but at what cost...",
+  com3: "Being ousted from R****wood, you partner with T***** C***r**** at the Crescent Beach for the promise of a great prize...",
+  a1f: "It all started when someone lost his wife and lost his sit. Time to end it.",
+  a2f: "Defeat M********, the shadow lord, and <b>you and exalted or higher wizards get five times more gold.</b>",
 };
 
 var upgradeRequirements = {
@@ -635,6 +680,42 @@ var upgradeRequirements = {
   critical: levelMinimum(50),
   tc: staffMinimum("novice", 50),
   luis: levelMinimum(75),
+  sun2: levelMinimum(86),
+  runLuis: function() {
+    return game.resources.level.greaterOrEquals(90) &&
+      game.upgrades.luis;
+  },
+  empire: function() {
+    return game.resources.activePlayers.greaterOrEquals(game.resources.population);
+  },
+  wand: levelMinimum(15),
+  bastion: levelMinimum(93),
+  shadow: function() {
+    return game.resources.level.greaterOrEquals(95) &&
+      game.upgrades.bastion;
+  },
+  sea: function() {
+    return game.resources.level.greaterOrEquals(95) &&
+      game.upgrades.bastion;
+  },
+  ww: levelMinimum(60),
+  com1: function() {
+    return game.resources.level.greaterOrEquals(96) &&
+      game.upgrades.sea;
+  },
+  com2: function() {
+    return game.resources.level.greaterOrEquals(97) &&
+      game.upgrades.com1;
+  },
+  com3: function() {
+    return game.resources.level.greaterOrEquals(98) &&
+      game.upgrades.com2;
+  },
+  a1f: levelMinimum(45),
+  a2f: function() {
+    return game.resources.level.greaterOrEquals(100) &&
+      game.upgrades.com3;
+  },
 };
 
 var upgradePrices = {
@@ -661,7 +742,39 @@ var upgradePrices = {
   critical: [resAmt("gold", 80000)],
   tc: [resAmt("gold", 2000)],
   luis: [resAmt("gold", 250000000)],
+  sun2: [resAmt("gold", 350000000)],
+  runLuis: [resAmt("gold", 650000000)],
+  empire: [
+    resAmt("gold", "1000000000000"),
+    resAmt("activePlayers", "200000000000"),
+    resAmt("population", "200000000000")
+  ],
+  wand: [resAmt("gold", 45000)],
+  bastion: [resAmt("gold", 750000000), resAmt("gear", 1000)],
+  shadow: [resAmt("gold", 250000000)],
+  sea: [resAmt("gold", 950000000), resAmt("gear", 1000)],
+  ww: [resAmt("gold", 1600000)],
+  com1: [resAmt("gold", "2000000000")],
+  com2: [resAmt("gold", "2500000000")],
+  com3: [resAmt("gold", "3000000000")],
+  a1f: [resAmt("gold", 5678765)],
+  a2f: [resAmt("gold", "40000000000"), resAmt("gear", 2500)],
 };
+
+var upgradeImmediateEffects = {
+  shadow: function() {
+    game.hres.agr -= 2000;
+  },
+  com1: function() {
+    getXP(10000);
+  },
+  com2: function() {
+    getXP(10000);
+  },
+  com3: function() {
+    getXP(10000);
+  },
+}
 
 function reposition(elem, x, y) {
   var height = window.innerHeight;
@@ -730,6 +843,8 @@ function updateUpgrades() {
 
 function addUpgrade(name) {
   game.upgrades[name] = 1;
+  if (upgradeImmediateEffects[name])
+    upgradeImmediateEffects[name]();
   var purchasedUpgradeList = document.getElementById("purchased-upgrades");
   var unpurchasedEntry = document.getElementById("upgrade-" + name);
   unpurchasedEntry.remove();
@@ -831,12 +946,18 @@ function clickBigButton(quiet) {
     getRandomArbitrary(0, 4) +
     getRandomArbitrary(1.5, 2.5) * game.resources.level
   ));
+  if (game.upgrades.wand)
+    gold = gold.plus(game.gps.divide(1000));
   if (game.upgrades.lessons) gold = gold.times(3).divide(2);
   if (game.upgrades.bears) gold = gold.times(2);
   if (game.upgrades.valor) gold = gold.times(2);
   if (game.upgrades.rank7) gold = gold.times(3).divide(2);
   if (game.upgrades.mount) gold = gold.times(2);
   if (game.upgrades.sun) gold = gold.times(3).divide(2);
+  if (game.upgrades.sun2) gold = gold.times(2);
+  if (game.upgrades.empire) gold = gold.times(4);
+  if (game.upgrades.shadow) gold = gold.times(3);
+  if (game.upgrades.a2f) gold = gold.times(5);
   if (game.upgrades.test) gold = gold.plus(2);
   var xp =
     bigInt(3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level)));
@@ -858,9 +979,9 @@ function clickBigButton(quiet) {
     game.resources.loot = game.resources.loot.plus(getRandomInt(2, 6 + 4 * crit));
   }
   game.resources.gold = game.resources.gold.add(gold);
-  if (!quiet) logMessage("You received " + gold + " gold!");
+  if (!quiet) logMessage("You received " + shorten(gold) + " gold!");
   getXP(xp);
-  if (!quiet) logMessage("You received " + xp + " experience!");
+  if (!quiet) logMessage("You received " + shorten(xp) + " experience!");
 }
 
 function updatePopulation() {
@@ -908,7 +1029,7 @@ function refreshPersuasivePower() {
   if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
     return;
   game.hres.pp = Math.min(100, game.hres.pp + getRandomInt(1, 3));
-  if (getRandomArbitrary(0, 10000) * (game.upgrades.weed ? 2 : 1) <
+  if (getRandomArbitrary(0, 5000) * (game.upgrades.weed ? 2 : 1) <
       (game.hres.agr - game.hres.bagr)) {
     logMessage("The euphoria subsides...");
     game.hres.agr--;
@@ -927,43 +1048,58 @@ function recruitAutomatically(power) {
 
 function doStaffBusiness() {
   var goldEarnings = [
-    staffCount("novice") * getRandomArbitrary(0.1, 1),
-    staffCount("apprentice") * getRandomArbitrary(0.5, 4),
-    staffCount("initiate") * getRandomArbitrary(2, 6),
-    staffCount("journeyman") * getRandomArbitrary(4, 9),
-    staffCount("adept") * getRandomArbitrary(10, 20),
-    staffCount("magus") * getRandomArbitrary(25, 35),
-    staffCount("master") * getRandomArbitrary(40, 65),
-    staffCount("grandmaster") * getRandomArbitrary(100, 135),
-    staffCount("legendary") * getRandomArbitrary(300, 350),
-    staffCount("transcendent") * getRandomArbitrary(950, 1150),
+    bigInt(staffCount("novice")).times(getRandomInt(1, 11)).divide(10),
+    bigInt(staffCount("apprentice")).times(getRandomInt(1, 9)).divide(2),
+    bigInt(staffCount("initiate")).times(getRandomInt(2, 7)),
+    bigInt(staffCount("journeyman")).times(getRandomInt(4, 9)),
+    bigInt(staffCount("adept")).times(getRandomInt(10, 20)),
+    bigInt(staffCount("magus")).times(getRandomInt(25, 35)),
+    bigInt(staffCount("master")).times(getRandomInt(40, 65)),
+    bigInt(staffCount("grandmaster")).times(getRandomInt(100, 135)),
+    bigInt(staffCount("legendary")).times(getRandomInt(300, 350)),
+    bigInt(staffCount("transcendent")).times(getRandomInt(950, 1150)),
+    bigInt(staffCount("archmage")).times(getRandomInt(2500, 2750)),
+    bigInt(staffCount("promethean")).times(getRandomInt(8000, 9001)),
+    bigInt(staffCount("exalted")).times(getRandomInt(28000, 28500)),
   ]
   var loot = getRandomInt(2, 6);
   var headCount = [
-    "legendary", "transcendent",
+    "legendary", "transcendent", "archmage", "promethean", "exalted",
   ].map(staffCount).reduce(function (a, b) {
     return a + b;
   }, 0)
-  function addBoost(upgrade, from, by) {
+  function addBoost(upgrade, from, n, d) {
     if (game.upgrades[upgrade]) {
-      for (var i = from; i < goldEarnings.length; ++i) goldEarnings[i] *= by;
+      for (var i = from; i < goldEarnings.length; ++i)
+        goldEarnings[i] = goldEarnings[i].times(n).divide(d);
     }
-    loot *= by;
+    loot *= n / d;
   }
-  addBoost("lessons", 2, 1.5);
-  addBoost("bears", 4, 2);
-  addBoost("valor", 6, 2);
-  addBoost("rank7", 6, 2);
-  addBoost("sun", 7, 1.5);
-  addBoost("synergy1", 7, 1 + 0.01 * staffCount("pvpLord"));
-  addBoost("tc", 0, 1.2);
-  game.cumulGold += goldEarnings.reduce(function (a, b) {
-    return a + b;
-  }, 0) / 20;
-  game.resources.gold = game.resources.gold.add(Math.floor(game.cumulGold));
-  game.cumulGold -= Math.floor(game.cumulGold);
+  addBoost("lessons", 2, 3, 2);
+  addBoost("bears", 4, 2, 1);
+  addBoost("valor", 6, 2, 1);
+  addBoost("rank7", 6, 2, 1);
+  addBoost("sun", 7, 3, 2);
+  addBoost("synergy1", 7, 100 + staffCount("pvpLord"), 100);
+  addBoost("sun2", 9, 2, 1);
+  addBoost("tc", 0, 6, 2);
+  addBoost("empire", 0, 4, 1);
+  addBoost("shadow", 11, 3, 1);
+  addBoost("a2f", 12, 5, 1);
+  game.gps = goldEarnings.reduce(function (a, b) {
+    return a.add(b);
+  }, bigInt.zero);
+  game.cumulGold += game.gps.mod(20).valueOf();
+  game.resources.gold =
+    game.resources.gold.add(game.gps.divide(20)).add(Math.floor(game.cumulGold / 20));
+  game.cumulGold -= 20 * Math.floor(game.cumulGold / 20);
   if (game.upgrades.goldFarm) {
     game.resources.loot = game.resources.loot.plus(Math.round(loot / 20));
+  }
+  if (game.upgrades.ww &&
+      20 * Math.random() < Math.min(0.1, 0.005 * headCount)) {
+    game.resources.gear =
+      game.resources.gear.plus(1 + Math.floor(1.15 * Math.random()));
   }
   var power = staffCount("fanboy");
   var pvpLordPower = 2.8 * staffCount("pvpLord");
@@ -998,6 +1134,7 @@ function sellLoot() {
     rate = Math.floor(rate * getRandomArbitrary(1.8, 2.2));
   console.log(rate);
   var worth = game.resources.loot.times(rate);
+  if (game.upgrades.empire) worth = worth.times(4);
   logMessage("You sold " + shorten(game.resources.loot) +
     " pieces of loot for " + shorten(worth) + " gold.");
   game.resources.loot = bigInt.zero;
@@ -1005,7 +1142,9 @@ function sellLoot() {
 }
 
 function luis() {
-  if (game.upgrades.luis && game.timer % 100 == 0) {
+  var period = 100;
+  if (game.upgrades.runLuis) period /= 2;
+  if (game.upgrades.luis && game.timer % period == 0) {
     clickBigButton(true);
   }
 }
@@ -1028,6 +1167,8 @@ function tick() {
 }
 
 function main() {
+  var ver = document.getElementById("version");
+  ver.innerHTML = "Clicker101 version " + VERSION + ", written by Uruwi. I am not related to KI.";
   resetGame();
   setInterval(tick, 50);
   setInterval(autoSave, 60000);
