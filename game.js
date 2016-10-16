@@ -258,6 +258,7 @@ function resetGame() {
   game.cumulGold = 0;
   game.cumulGear = 0;
   game.timer = 0;
+  game.special = {};
   var staffList = document.getElementById("staff");
   staffList.innerHTML = "";
   var upgradeList = document.getElementById("upgrades");
@@ -415,6 +416,13 @@ var wizardClasses = {
   legendary: true,
   transcendent: true,
 };
+function wizardCount() {
+  var c = 0;
+  for (var key in wizardClasses) {
+    c += game.staff[key] || 0;
+  }
+  return c;
+}
 function wizardMinimum(u) {
   return function() {
     var c = 0;
@@ -422,6 +430,11 @@ function wizardMinimum(u) {
       c += game.staff[key] || 0;
     }
     return c >= u;
+  }
+}
+function staffMinimum(name, count) {
+  return function() {
+    return staffCount(name) >= count;
   }
 }
 var staffRequirements = {
@@ -547,6 +560,10 @@ var upgradeNames = {
   youtube: "YouTube",
   war: "War on twizard intros",
   pvpVideos: "PvP videos",
+  synergy1: "Synergy I: Border between PvE and PvP",
+  critical: "Criticality",
+  tc: "Treasure cards",
+  luis: "Secrets from Luis",
 };
 
 var upgradeDescriptions = {
@@ -557,7 +574,7 @@ var upgradeDescriptions = {
   questStack: "You quest more efficiently; <b>clicking yields 50% more experience.</b>",
   lessons: "Our favorite anthropomorphic horses offers you a lesson in combat; <b>you and initiate or higher wizards collect 50% more gold.</b>",
   party: "With a team, you can complete dungeons faster. <b>Getting boss drops from clicking is twice as likely.</b>",
-  arena: "<b>The game shouldn't die as quickly.</b> (Unlike what SkythekidRS suggests, the arena is <i>not</i> lined with butter.)",
+  arena: "<b>The game shouldn't die as quickly.</b> (Despite what SkythekidRS suggests, the arena is <i>not</i> lined with butter.)",
   valor: "Fight the hardest boss in the whole first arc, and earn the glory of <b>double gold to you and master or higher wizards!</b>",
   rank7: "After loads of testing, these spells are available to you! <b>Clicking and master or higher wizards get 50% more gold.</b>",
   mount: "(OK, I lied. I just bought one of the mounts in the Crown Shop that were available for gold.) <b>You gain twice as much gold and experience.</b>",
@@ -569,6 +586,10 @@ var upgradeDescriptions = {
   youtube: "People start watching your videos, and <b>recruiting is twice as powerful.</b>",
   war: "As you fight tooth and nail against those spinning 3-D names coupled with loud music, <b>recruiting is twice as powerful.</b>",
   pvpVideos: "You start recording yourself playing PvP matches. <b>The game should take even longer to die.</b>",
+  synergy1: "<b>Legendary or higher wizards get 1% more gold per PvP warlord. PvP warlords attract 0.1% more players for each wizard.</b>",
+  critical: "Clicking has a <b>10% chance of doubling your yield.<b> Your brother has a <b>10% chance to get twice as much experience.</b>",
+  tc: "All wizards earn <b>20% more gold.</b>",
+  luis: "You automatically click <b>every 5 seconds.</b>",
 };
 
 var upgradeRequirements = {
@@ -610,6 +631,10 @@ var upgradeRequirements = {
   pvpVideos: function() {
     return game.upgrades.youtube && game.upgrades.arena;
   },
+  synergy1: levelMinimum(70),
+  critical: levelMinimum(50),
+  tc: staffMinimum("novice", 50),
+  luis: levelMinimum(75),
 };
 
 var upgradePrices = {
@@ -632,10 +657,20 @@ var upgradePrices = {
   youtube: [resAmt("gold", 9000)],
   war: [resAmt("gold", 400000)],
   pvpVideos: [resAmt("gold", 600000)],
+  synergy1: [resAmt("gold", 40000000)],
+  critical: [resAmt("gold", 80000)],
+  tc: [resAmt("gold", 2000)],
+  luis: [resAmt("gold", 250000000)],
 };
 
 function reposition(elem, x, y) {
-  elem.style.top = y + 5;
+  var height = window.innerHeight;
+  var tooltipHeight = elem.offsetHeight;
+  if (y + tooltipHeight + 50 >= height) {
+    elem.style.top = y - tooltipHeight + 5;
+  } else {
+    elem.style.top = y + 5;
+  }
   elem.style.left = x + 5;
 }
 
@@ -791,7 +826,7 @@ function getXP(amt) {
   }
 }
 
-function clickBigButton() {
+function clickBigButton(quiet) {
   var gold = bigInt(Math.floor(
     getRandomArbitrary(0, 4) +
     getRandomArbitrary(1.5, 2.5) * game.resources.level
@@ -808,17 +843,24 @@ function clickBigButton() {
   if (game.upgrades.questStack) xp = xp.times(3).divide(2);
   if (game.upgrades.mount) xp = xp.times(2);
   if (Math.random() < 0.05 * (game.upgrades.party ? 2 : 1)) {
-    gold = Math.floor(gold * getRandomArbitrary(4, 8));
-    xp = Math.floor(xp * getRandomArbitrary(2, 4));
+    gold = gold.times(getRandomInt(400, 800)).divide(100);
+    xp = xp.times(getRandomInt(200, 400)).divide(100);
     game.resources.loot = game.resources.loot.next();
   }
+  var crit = false;
+  if (game.upgrades.critical && Math.random() < 0.1) {
+    gold = gold.times(2);
+    xp = xp.times(2);
+    crit = true;
+    if (!quiet) logMessage("CRITICAL!");
+  }
   if (game.upgrades.goldFarm) {
-    game.resources.loot = game.resources.loot.plus(getRandomInt(2, 6));
+    game.resources.loot = game.resources.loot.plus(getRandomInt(2, 6 + 4 * crit));
   }
   game.resources.gold = game.resources.gold.add(gold);
-  logMessage("You received " + gold + " gold!");
+  if (!quiet) logMessage("You received " + gold + " gold!");
   getXP(xp);
-  logMessage("You received " + xp + " experience!");
+  if (!quiet) logMessage("You received " + xp + " experience!");
 }
 
 function updatePopulation() {
@@ -913,6 +955,8 @@ function doStaffBusiness() {
   addBoost("valor", 6, 2);
   addBoost("rank7", 6, 2);
   addBoost("sun", 7, 1.5);
+  addBoost("synergy1", 7, 1 + 0.01 * staffCount("pvpLord"));
+  addBoost("tc", 0, 1.2);
   game.cumulGold += goldEarnings.reduce(function (a, b) {
     return a + b;
   }, 0) / 20;
@@ -922,12 +966,16 @@ function doStaffBusiness() {
     game.resources.loot = game.resources.loot.plus(Math.round(loot / 20));
   }
   var power = staffCount("fanboy");
-  power += 2.8 * staffCount("pvpLord");
+  var pvpLordPower = 2.8 * staffCount("pvpLord");
+  if (game.upgrades.synergy1) pvpLordPower *= (1 + 0.001 * wizardCount());
+  power += pvpLordPower;
   recruitAutomatically(power);
 }
 
 function littleBrother() {
-  if (game.upgrades.littleBrother && game.timer % 20 == 0) getXP(1);
+  var amt = 1;
+  if (game.upgrades.critical && Math.random() < 0.1) amt *= 2;
+  if (game.upgrades.littleBrother && game.timer % 20 == 0) getXP(amt);
 }
 
 function gearCrafting() {
@@ -956,6 +1004,12 @@ function sellLoot() {
   game.resources.gold = game.resources.gold.plus(worth);
 }
 
+function luis() {
+  if (game.upgrades.luis && game.timer % 100 == 0) {
+    clickBigButton(true);
+  }
+}
+
 function tick() {
   if (!game.died || !lastWordsSaid) {
     updatePopulation();
@@ -964,6 +1018,7 @@ function tick() {
     doStaffBusiness();
     refreshPersuasivePower();
     littleBrother();
+    luis();
     gearCrafting();
     displayResources();
     refreshLog();
