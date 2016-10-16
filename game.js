@@ -115,7 +115,7 @@ function shorten(n) {
   var ns = n.toString();
   var power = ns.length - 1;
   var cls = Math.floor(power / 3);
-  var residue = power % cls;
+  var residue = power % 3;
   if (cls > pcOfLast) {
     return shorten(ns.slice(0, ns.length - 3 * pcOfLast)) +
       " " + words[words.length - 1];
@@ -129,7 +129,7 @@ function shorten(n) {
 // Thanks http://stackoverflow.com/a/196991/3130218
 function toTitleCase(str) {
   if (str === undefined) return "uNDEFINED";
-  return str.replace(/\w\S*/g, function(txt){ return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
+  return str.replace(/\w\S*/g, function(txt){ return txt.charAt(0).toUpperCase() + txt.substr(1); });
 }
 
 function isVowelInitial(str) {
@@ -240,6 +240,8 @@ function resetGame() {
     crowns: bigInt.zero,
     activePlayers: bigInt("20000000"),
     population: bigInt("7000000000"),
+    gear: bigInt.zero,
+    loot: bigInt.zero,
   };
   game.hres = {
     gps: bigInt.zero,
@@ -254,6 +256,7 @@ function resetGame() {
   game.died = false;
   game.autosave = true;
   game.cumulGold = 0;
+  game.cumulGear = 0;
   game.timer = 0;
   var staffList = document.getElementById("staff");
   staffList.innerHTML = "";
@@ -357,6 +360,10 @@ var staffNames = {
   magus: "magus wizard",
   master: "master wizard",
   grandmaster: "grandmaster wizard",
+  gearCrafter: "gear crafter",
+  legendary: "legendary wizard",
+  transcendent: "transcendent wizard",
+  pvpLord: "PvP warlord",
 };
 var staffDescriptions = {
   novice: "A beginner to farm for you.",
@@ -368,6 +375,10 @@ var staffDescriptions = {
   magus: "A hardened veteran in M*****.",
   master: "Well-versed in magical combat, this player is ready to face the travails of D**********.",
   grandmaster: "This wizard has survived the backbreaking effort to stop M********* D****, once and for all.",
+  gearCrafter: "Crafts high-level gear.",
+  legendary: "A level 60 wizard who is now leaving C******a and entering Z*****a.",
+  transcendent: "An even-higher level wizard to farm large amounts of gold.",
+  pvpLord: "A PvP master to attract even more players.",
 };
 var baseStaffPrices = {
   novice: [resAmt("gold", 30)],
@@ -379,6 +390,10 @@ var baseStaffPrices = {
   magus: [resAmt("gold", 17800)],
   master: [resAmt("gold", 55000)],
   grandmaster: [resAmt("gold", 160000)],
+  gearCrafter: [resAmt("gold", 200000)],
+  legendary: [resAmt("gold", 680000)],
+  transcendent: [resAmt("gold", 1890000)],
+  pvpLord: [resAmt("gold", 700000)],
 };
 
 function staffCount(name) {
@@ -396,7 +411,9 @@ var wizardClasses = {
   adept: true,
   magus: true,
   master: true,
-  grandmaster: true
+  grandmaster: true,
+  legendary: true,
+  transcendent: true,
 };
 function wizardMinimum(u) {
   return function() {
@@ -417,6 +434,12 @@ var staffRequirements = {
   magus: levelMinimum(30),
   master: levelMinimum(40),
   grandmaster: levelMinimum(50),
+  gearCrafter: levelMinimum(56),
+  legendary: levelMinimum(60),
+  transcendent: levelMinimum(70),
+  pvpLord: function () {
+    return game.upgrades.arena && game.resources.level.greaterOrEquals(60);
+  }
 }
 
 function updateStaffCount(name, amt) {
@@ -513,6 +536,17 @@ var upgradeNames = {
   lessons: "D****'s lessons",
   party: "Questing party",
   arena: "Gold-lined arena",
+  valor: "Fight J****!",
+  rank7: "Rank 7 spells",
+  mount: "Awesome mount",
+  weed: "Extra-strength grendelweed",
+  winter: "Winter is coming",
+  goldFarm: "Half*** B******C****",
+  sun: "Sun magic",
+  bazaar: "Bazaar",
+  youtube: "YouTube",
+  war: "War on twizard intros",
+  pvpVideos: "PvP videos",
 };
 
 var upgradeDescriptions = {
@@ -524,6 +558,17 @@ var upgradeDescriptions = {
   lessons: "Our favorite anthropomorphic horses offers you a lesson in combat; <b>you and initiate or higher wizards collect 50% more gold.</b>",
   party: "With a team, you can complete dungeons faster. <b>Getting boss drops from clicking is twice as likely.</b>",
   arena: "<b>The game shouldn't die as quickly.</b> (Unlike what SkythekidRS suggests, the arena is <i>not</i> lined with butter.)",
+  valor: "Fight the hardest boss in the whole first arc, and earn the glory of <b>double gold to you and master or higher wizards!</b>",
+  rank7: "After loads of testing, these spells are available to you! <b>Clicking and master or higher wizards get 50% more gold.</b>",
+  mount: "(OK, I lied. I just bought one of the mounts in the Crown Shop that were available for gold.) <b>You gain twice as much gold and experience.</b>",
+  weed: "<b>Euphoria subsides half as quickly.</b>",
+  winter: "Provides access to Wintertusk.",
+  goldFarm: "You find a boss that drops great loot. <b>You and legendary or higher wizards have a chance to get loot.</b>",
+  sun: "As you find ways to make your attacks even powerful, <b>you and legendary or higher wizards collect 50% more gold.</b>",
+  bazaar: "You find that E*** is willing to buy your loot, so <b>you get twice as much money from selling loot.</b> (Needless to say, he isn't as willing to take your Waterworks gear.)",
+  youtube: "People start watching your videos, and <b>recruiting is twice as powerful.</b>",
+  war: "As you fight tooth and nail against those spinning 3-D names coupled with loud music, <b>recruiting is twice as powerful.</b>",
+  pvpVideos: "You start recording yourself playing PvP matches. <b>The game should take even longer to die.</b>",
 };
 
 var upgradeRequirements = {
@@ -535,6 +580,36 @@ var upgradeRequirements = {
   lessons: levelMinimum(10),
   party: levelMinimum(25),
   arena: wizardMinimum(100),
+  valor: function() {
+    return game.resources.level.greaterOrEquals(40) &&
+      game.upgrades.bears && game.upgrades.party;
+  },
+  rank7: levelMinimum(48),
+  mount: function() { return true; },
+  weed: function() {
+    return game.resources.level.greaterOrEquals(45) &&
+      game.upgrades.valor;
+  },
+  winter: function() {
+    return game.resources.level.greaterOrEquals(55) &&
+      game.upgrades.valor;
+  },
+  goldFarm: function() {
+    return game.upgrades.winter;
+  },
+  sun: levelMinimum(58),
+  bazaar: levelMinimum(10),
+  youtube: function() {
+    return game.resources.level.greaterOrEquals(20) &&
+      game.upgrades.socialMedia;
+  },
+  war: function() {
+    return game.resources.level.greaterOrEquals(40) &&
+      game.upgrades.youtube;
+  },
+  pvpVideos: function() {
+    return game.upgrades.youtube && game.upgrades.arena;
+  },
 };
 
 var upgradePrices = {
@@ -546,6 +621,17 @@ var upgradePrices = {
   lessons: [resAmt("gold", 2500)],
   party: [resAmt("gold", 45000)],
   arena: [resAmt("gold", 200000)],
+  valor: [resAmt("gold", 500000), resAmt("activePlayers", 40000)],
+  rank7: [resAmt("gold", 100000)],
+  mount: [resAmt("gold", 30000)],
+  weed: [resAmt("gold", 1000000)],
+  winter: [resAmt("gold", 1000000)],
+  goldFarm: [resAmt("gold", 1500000)],
+  sun: [resAmt("gold", 750000)],
+  bazaar: [resAmt("gold", 3000)],
+  youtube: [resAmt("gold", 9000)],
+  war: [resAmt("gold", 400000)],
+  pvpVideos: [resAmt("gold", 600000)],
 };
 
 function reposition(elem, x, y) {
@@ -656,13 +742,15 @@ function seppukuByButton() {
   seppuku();
 }
 
+var mainButtons = ["thebutton", "recruit", "sell"];
+var buttonLabels = ["Click to farm!", "Recruit", "Sell Loot"];
+
 function onDeath() {
-  var bigButton = document.getElementById("thebutton");
-  bigButton.setAttribute("disabled", "disabled");
-  bigButton.innerHTML = "You can't click from the other side!";
-  var recButton = document.getElementById("recruit");
-  recButton.setAttribute("disabled", "disabled");
-  recButton.innerHTML = "You can't click from the other side!";
+  for (var i in mainButtons) {
+    var button = document.getElementById(mainButtons[i]);
+    button.setAttribute("disabled", "disabled");
+    button.innerHTML = "You can't click from the other side!";
+  }
   var resourcePanel = document.getElementsByClassName("resources")[0];
   resourcePanel.innerHTML = "<span class=dead>YOU DIED!</dead>";
   var lifeButtons = document.getElementsByClassName("disableWhenDead");
@@ -675,12 +763,11 @@ function onDeath() {
 }
 
 function onLife() {
-  var bigButton = document.getElementById("thebutton");
-  bigButton.removeAttribute("disabled");
-  bigButton.innerHTML = "Click to farm";
-  var recButton = document.getElementById("recruit");
-  recButton.removeAttribute("disabled");
-  recButton.innerHTML = "Recruit";
+  for (var i in mainButtons) {
+    var button = document.getElementById(mainButtons[i]);
+    button.removeAttribute("disabled");
+    button.innerHTML = buttonLabels[i];
+  }
   var lifeButtons = document.getElementsByClassName("disableWhenDead");
   for (var i in lifeButtons) {
     var button = lifeButtons[i];
@@ -705,19 +792,28 @@ function getXP(amt) {
 }
 
 function clickBigButton() {
-  var gold = Math.floor(
+  var gold = bigInt(Math.floor(
     getRandomArbitrary(0, 4) +
     getRandomArbitrary(1.5, 2.5) * game.resources.level
-  );
-  if (game.upgrades.lessons) gold = Math.floor(gold * 1.5);
-  if (game.upgrades.bears) gold *= 2;
-  if (game.upgrades.test) gold += 2;
+  ));
+  if (game.upgrades.lessons) gold = gold.times(3).divide(2);
+  if (game.upgrades.bears) gold = gold.times(2);
+  if (game.upgrades.valor) gold = gold.times(2);
+  if (game.upgrades.rank7) gold = gold.times(3).divide(2);
+  if (game.upgrades.mount) gold = gold.times(2);
+  if (game.upgrades.sun) gold = gold.times(3).divide(2);
+  if (game.upgrades.test) gold = gold.plus(2);
   var xp =
-    3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level));
-  if (game.upgrades.questStack) xp = Math.floor(xp * 1.5);
+    bigInt(3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level)));
+  if (game.upgrades.questStack) xp = xp.times(3).divide(2);
+  if (game.upgrades.mount) xp = xp.times(2);
   if (Math.random() < 0.05 * (game.upgrades.party ? 2 : 1)) {
     gold = Math.floor(gold * getRandomArbitrary(4, 8));
     xp = Math.floor(xp * getRandomArbitrary(2, 4));
+    game.resources.loot = game.resources.loot.next();
+  }
+  if (game.upgrades.goldFarm) {
+    game.resources.loot = game.resources.loot.plus(getRandomInt(2, 6));
   }
   game.resources.gold = game.resources.gold.add(gold);
   logMessage("You received " + gold + " gold!");
@@ -736,12 +832,21 @@ function updatePopulation() {
   }
 }
 
+function maxPersuaded(base) {
+  if (game.upgrades.socialMedia) base *= 10;
+  if (game.upgrades.youtube) base *= 2;
+  if (game.upgrades.war) base *= 2;
+  return base;
+}
+
 function recruit() {
   var upTo = 2 + 0.01 * game.hres.pp;
-  if (game.upgrades.socialMedia) upTo *= 10;
-  var players = Math.floor(upTo * Math.random());
+  var players = Math.floor(maxPersuaded(upTo) * Math.random());
   game.resources.activePlayers = game.resources.activePlayers.add(players);
-  if (players == 0) logMessage("Bummer! You fail to recruit any players.");
+  if (players == 0) {
+    logMessage("Bummer! You fail to recruit any players.");
+    game.hres.agr -= getRandomInt(10, 20);
+  }
   else if (players == 1) logMessage("Someone joins the game.");
   else logMessage("You recruit " + players + " new wizards.");
   if (getRandomInt(0, 10000) < game.hres.pp) {
@@ -754,13 +859,15 @@ function recruit() {
 function calculateBAGR() {
   var res = game.hres.bagr;
   if (game.upgrades.arena) res += 4;
+  if (game.upgrades.pvpVideos) res += 2;
   return res;
 }
 function refreshPersuasivePower() {
   if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
     return;
   game.hres.pp = Math.min(100, game.hres.pp + getRandomInt(1, 3));
-  if (getRandomArbitrary(0, 10000) < (game.hres.agr - game.hres.bagr)) {
+  if (getRandomArbitrary(0, 10000) * (game.upgrades.weed ? 2 : 1) <
+      (game.hres.agr - game.hres.bagr)) {
     logMessage("The euphoria subsides...");
     game.hres.agr--;
   }
@@ -768,8 +875,7 @@ function refreshPersuasivePower() {
 
 function recruitAutomatically(power) {
   var players = getRandomArbitrary(0, power / 40) + getRandomArbitrary(0, power / 40);
-  if (game.upgrades.socialMedia) players *= 10;
-  players = Math.ceil(players);
+  players = Math.ceil(maxPersuaded(players));
   game.resources.activePlayers = game.resources.activePlayers.add(players);
   if (getRandomInt(0, 20000) < Math.min(power, 1000)) {
     logMessage("You feel that the game is becoming more popular.");
@@ -787,24 +893,67 @@ function doStaffBusiness() {
     staffCount("magus") * getRandomArbitrary(25, 35),
     staffCount("master") * getRandomArbitrary(40, 65),
     staffCount("grandmaster") * getRandomArbitrary(100, 135),
+    staffCount("legendary") * getRandomArbitrary(300, 350),
+    staffCount("transcendent") * getRandomArbitrary(950, 1150),
   ]
+  var loot = getRandomInt(2, 6);
+  var headCount = [
+    "legendary", "transcendent",
+  ].map(staffCount).reduce(function (a, b) {
+    return a + b;
+  }, 0)
   function addBoost(upgrade, from, by) {
     if (game.upgrades[upgrade]) {
       for (var i = from; i < goldEarnings.length; ++i) goldEarnings[i] *= by;
     }
+    loot *= by;
   }
   addBoost("lessons", 2, 1.5);
   addBoost("bears", 4, 2);
+  addBoost("valor", 6, 2);
+  addBoost("rank7", 6, 2);
+  addBoost("sun", 7, 1.5);
   game.cumulGold += goldEarnings.reduce(function (a, b) {
     return a + b;
   }, 0) / 20;
   game.resources.gold = game.resources.gold.add(Math.floor(game.cumulGold));
   game.cumulGold -= Math.floor(game.cumulGold);
-  recruitAutomatically(staffCount("fanboy"));
+  if (game.upgrades.goldFarm) {
+    game.resources.loot = game.resources.loot.plus(Math.round(loot / 20));
+  }
+  var power = staffCount("fanboy");
+  power += 2.8 * staffCount("pvpLord");
+  recruitAutomatically(power);
 }
 
 function littleBrother() {
   if (game.upgrades.littleBrother && game.timer % 20 == 0) getXP(1);
+}
+
+function gearCrafting() {
+  game.cumulGear += 0.0002 * (game.staff.gearCrafter || 0);
+  if (!game.resources.gear || !game.resources.gear.xor)
+    game.resources.gear = bigInt.zero;
+  game.resources.gear = game.resources.gear.add(Math.floor(game.cumulGear));
+  game.cumulGear -= Math.floor(game.cumulGear);
+}
+
+function sellLoot() {
+  if (game.resources.loot.isZero()) {
+    logMessage("You have no loot to sell!");
+    return;
+  }
+  var lv = game.resources.level.toJSNumber();
+  var rate = Math.floor(
+    lv * (getRandomArbitrary(45, 65) + lv));
+  if (game.upgrades.bazaar)
+    rate = Math.floor(rate * getRandomArbitrary(1.8, 2.2));
+  console.log(rate);
+  var worth = game.resources.loot.times(rate);
+  logMessage("You sold " + shorten(game.resources.loot) +
+    " pieces of loot for " + shorten(worth) + " gold.");
+  game.resources.loot = bigInt.zero;
+  game.resources.gold = game.resources.gold.plus(worth);
 }
 
 function tick() {
@@ -815,6 +964,7 @@ function tick() {
     doStaffBusiness();
     refreshPersuasivePower();
     littleBrother();
+    gearCrafting();
     displayResources();
     refreshLog();
     refreshAutoSaveMessage();
