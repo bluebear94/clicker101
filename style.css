@@ -1,0 +1,110 @@
+@font-face{
+  font-family: 'Comic Neue';
+  src: url('cn/ComicNeue-Regular.ttf') format('truetype');
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  padding: 50px 10%;
+  max-width: 1440px;
+  margin: auto;
+  border-top-style: none;
+  border-right-style: double;
+  border-bottom-style: none;
+  border-left-style: double;
+  border-width: 6px;
+  border-color: #330099;
+  line-height: 1.25;
+  font-size: 14;
+  font-family: "Comic Neue";
+  overflow-x: hidden;
+}
+
+div.resources {
+  text-align: right;
+  font-family: "DejaVu Sans Mono", monospace;
+  font-weight: bold;
+  font-size: 24;
+}
+
+td {
+  border: 2px solid #330099;
+  vertical-align: top;
+}
+
+span.dead {
+  color: red;
+  font-size: 48;
+}
+
+div.bigbutton {
+  text-align: center;
+}
+
+h1, h2 {
+  padding: 5px;
+}
+
+button {
+  font-family: "Comic Neue";
+  font-weight: bold;
+}
+
+div.stats {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 30%;
+}
+
+div.container {
+  display: flex;
+  height: 70%;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  backface-visibility: hidden;
+  will-change: overflow;
+}
+
+div.scrollbar {
+  overflow: auto;
+  height: auto;
+  padding: .5rem;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+}
+
+div.left {
+  overflow: auto;
+  height: auto;
+  padding: .5rem;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  width: 360px;
+}
+
+span.canAfford {
+  color: #008800;
+}
+
+span.cantAfford {
+  color: #880000;
+}
+
+.tooltip {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  text-align: left;
+  padding: 5px 5px;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  display: none;
+  width: 500px;
+}
+
