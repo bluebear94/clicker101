@@ -1143,7 +1143,7 @@ function refreshPersuasivePower() {
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
   if (getRandomArbitrary(0, 2500) * slowdown <
-      (game.hres.agr - game.hres.bagr) * fact) {
+      (game.hres.agr - calculateBAGR()) * fact) {
     logMessage("The euphoria subsides...");
     game.hres.agr--;
   }
