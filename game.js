@@ -1,5 +1,5 @@
 
-const VERSION = 3;
+const VERSION = 4;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -266,6 +266,7 @@ function resetGame() {
     population: bigInt("7000000000"),
     gear: bigInt.zero,
     loot: bigInt.zero,
+    tickets: bigInt.zero,
   };
   game.hres = {
     gps: bigInt.zero,
@@ -303,6 +304,7 @@ var resourceNames = {
   gear: "awesome gear",
   activePlayers: "active players",
   population: "population",
+  tickets: "arena tickets",
 };
 
 function resAmt(name, qty, inflation) {
@@ -633,6 +635,10 @@ var upgradeNames = {
   trivia: "KI Trivia",
   tree: "B*****by's Wisdom",
   dark: "D***m***",
+  arena2: "Mithril-lined arena",
+  arena3: "Orichalcum-lined arena",
+  arena4: "Draconium-lined arena",
+  antiTurtle: "Anti-turtling tactics",
 };
 
 var upgradeDescriptions = {
@@ -676,6 +682,10 @@ var upgradeDescriptions = {
   trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
   tree: "<b>+1% to gold drops</b> per hour of play.",
   dark: "Exalted or higher wizards drop <b>even more gear</b>.",
+  arena2: "<b>The game should take even longer to die.</b> (Great. We were waiting for the time those sky fan foo awk is would shot op about gold.)",
+  arena3: "<b>PvP warlords will also earn gear every battle.</b>",
+  arena4: "<b>Euphoria wears off even more slowly.</b>",
+  antiTurtle: "PvP battles take <b>25% less time</b>.",
 };
 
 var upgradeRequirements = {
@@ -771,6 +781,21 @@ var upgradeRequirements = {
     return game.resources.level.greaterOrEquals(100) &&
       game.upgrades.ww && game.upgrades.a2f;
   },
+  arena2: function() {
+    return game.resources.level.greaterOrEquals(65) &&
+      game.upgrades.arena;
+  },
+  arena3: function() {
+    return game.resources.level.greaterOrEquals(85) &&
+      game.upgrades.arena2;
+  },
+  arena4: function() {
+    return game.resources.level.greaterOrEquals(105) &&
+      game.upgrades.arena3;
+  },
+  antiTurtle: function() {
+    return game.upgrades.arena2;
+  },
 };
 
 var upgradePrices = {
@@ -822,6 +847,10 @@ var upgradePrices = {
   trivia: [resAmt("gold", 1000000000)],
   tree: [resAmt("gold", "100000000000"), resAmt("crowns", 115)],
   dark: [resAmt("gold", "75000000000")],
+  arena2: [resAmt("gold", 1000000), resAmt("tickets", 3600)],
+  arena3: [resAmt("gold", "100000000"), resAmt("tickets", 36000)],
+  arena4: [resAmt("gold", "10000000000"), resAmt("tickets", 360000)],
+  antiTurtle: [resAmt("gold", "1000000000"), resAmt("crowns", 300)],
 };
 
 var upgradeImmediateEffects = {
@@ -1103,14 +1132,18 @@ function calculateBAGR() {
   var res = game.hres.bagr;
   if (game.upgrades.arena) res += 4;
   if (game.upgrades.pvpVideos) res += 2;
+  if (game.upgrades.arena2) res += 2;
   return res;
 }
 function refreshPersuasivePower() {
   if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
     return;
   game.hres.pp = Math.min(100, game.hres.pp + getRandomInt(1, 3));
-  if (getRandomArbitrary(0, 5000) * (game.upgrades.weed ? 2 : 1) <
-      (game.hres.agr - game.hres.bagr)) {
+  var fact = 1 + 0.003 * (staffCount.fanboy + staffCount.pvpLord);
+  var slowdown = game.upgrades.weed ? 2 : 1;
+  if (game.upgrades.arena4) slowdown *= 1.5;
+  if (getRandomArbitrary(0, 2500) * slowdown <
+      (game.hres.agr - game.hres.bagr) * fact) {
     logMessage("The euphoria subsides...");
     game.hres.agr--;
   }
@@ -1292,6 +1325,20 @@ function doAutomaticTrivia() {
   }
 }
 
+function getArenaTickets() {
+  var period = game.upgrades.antiTurtle ? 150 : 200;
+  if (game.timer % period == 0) {
+    var c = staffCount("pvpLord");
+    var t = 0;
+    for (var i = 0; i < c; ++i) {
+      t += Math.random() < 0.5 ? 10 : 2;
+    }
+    game.resources.tickets = game.resources.tickets.add(t);
+    if (game.upgrades.arena3) {
+      game.resources.gear = game.resources.gear.add(getRandomInt(0, c));
+    }
+  }
+}
 
 var last = Date.now();
 var deltas = [
@@ -1311,6 +1358,7 @@ function tick() {
     luis();
     tickTriviaCooldowns();
     gearCrafting();
+    getArenaTickets();
     displayResources();
     refreshLog();
     refreshAutoSaveMessage();
