@@ -1,5 +1,5 @@
 
-const VERSION = 4;
+const VERSION = 5;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -1189,7 +1189,7 @@ function doStaffBusiness() {
       for (var i = from; i < goldEarnings.length; ++i)
         goldEarnings[i] = goldEarnings[i].times(n).divide(d);
     }
-    loot *= n / d;
+    if (from >= 7) loot *= n / d;
   }
   addBoost("lessons", 2, 3, 2);
   addBoost("bears", 4, 2, 1);
@@ -1211,7 +1211,7 @@ function doStaffBusiness() {
     game.resources.gold.add(game.gps.divide(20)).add(Math.floor(game.cumulGold / 20));
   game.cumulGold -= 20 * Math.floor(game.cumulGold / 20);
   if (game.upgrades.goldFarm) {
-    game.resources.loot = game.resources.loot.plus(Math.round(loot / 20));
+    game.resources.loot = game.resources.loot.plus(Math.round(loot * headCount / 2000));
   }
   if (game.upgrades.ww) {
     game.resources.gear = game.resources.gear.plus(Math.floor(0.001 * headCount));
@@ -1320,8 +1320,9 @@ function doAutomaticTrivia() {
   if (game.timer % (3600 * 20 / 10) == 0) {
     var amt = 5 * staffCount("trivia");
     game.resources.crowns = game.resources.crowns.add(amt);
-    logMessage("Your trivia monkeys have earned " +
-      shorten(amt) + " crowns for you.");
+    if (amt > 0)
+      logMessage("Your trivia monkeys have earned " +
+        shorten(amt) + " crowns for you.");
   }
 }
 
