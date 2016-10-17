@@ -676,7 +676,7 @@ var upgradeDescriptions = {
   com1: "Now you must land in the mind of the Shadow Queen, back when she was still a youngster, when she was in A*****, under the command of A******, and plot to kill the king.",
   com2: "You are now at the R****wood School of Magic. You battle the Death professor M********* D****, but at what cost...",
   com3: "Being ousted from R****wood, you partner with T***** C***r**** at the Crescent Beach for the promise of a great prize...",
-  a1f: "It all started when someone lost his wife and lost his sit. Time to end it.",
+  a1f: "It all started when someone lost his wife and lost his sit. Time to end it. If you do, <b>clicking provides 50% more experience.</b>",
   a2f: "Defeat M********, the shadow lord, and <b>you and exalted or higher wizards get five times more gold.</b>",
   empire2: "***ard101 is so popular, aliens are buying computers just to play it themselves. <b>Clicking is ten times more effective.</b>",
   trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
@@ -1068,6 +1068,7 @@ function clickBigButton(quiet) {
     bigInt(3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level)));
   if (game.upgrades.questStack) xp = xp.times(3).divide(2);
   if (game.upgrades.mount) xp = xp.times(2);
+  if (game.upgrades.a1f) xp = xp.times(3).divide(2);
   if (Math.random() < 0.05 * (game.upgrades.party ? 2 : 1)) {
     gold = gold.times(getRandomInt(400, 800)).divide(100);
     xp = xp.times(getRandomInt(200, 400)).divide(100);
