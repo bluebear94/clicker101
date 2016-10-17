@@ -1,5 +1,5 @@
 
-const VERSION = 2;
+const VERSION = 3;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -198,8 +198,12 @@ function merge(existingGame, newGame) {
 }
 function load() {
   resetGame();
-  newGame = game;
+  var newGame = game;
   var gameStr = localStorage.getItem("Clicker101SaveData");
+  if (gameStr === null) {
+    resetGame();
+    return;
+  }
   game = desubstSafe(JSON.parse(gameStr));
   merge(game, newGame);
   for (var key in game.staffPrice) {
@@ -628,6 +632,7 @@ var upgradeNames = {
   empire2: "Galactic empire",
   trivia: "KI Trivia",
   tree: "B*****by's Wisdom",
+  dark: "D***m***",
 };
 
 var upgradeDescriptions = {
@@ -669,7 +674,8 @@ var upgradeDescriptions = {
   a2f: "Defeat M********, the shadow lord, and <b>you and exalted or higher wizards get five times more gold.</b>",
   empire2: "***ard101 is so popular, aliens are buying computers just to play it themselves. <b>Clicking is ten times more effective.</b>",
   trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
-  tree: "+1% to gold drops per hour of play.",
+  tree: "<b>+1% to gold drops</b> per hour of play.",
+  dark: "Exalted or higher wizards drop <b>even more gear</b>.",
 };
 
 var upgradeRequirements = {
@@ -715,7 +721,10 @@ var upgradeRequirements = {
   critical: levelMinimum(50),
   tc: staffMinimum("novice", 50),
   luis: levelMinimum(75),
-  sun2: levelMinimum(86),
+  sun2: function() {
+    return game.resources.level.greaterOrEquals(86) &&
+      game.upgrades.sun;
+  },
   runLuis: function() {
     return game.resources.level.greaterOrEquals(90) &&
       game.upgrades.luis;
@@ -758,6 +767,10 @@ var upgradeRequirements = {
   tree: function() {
     return game.upgrades.a2f;
   },
+  dark: function() {
+    return game.resources.level.greaterOrEquals(100) &&
+      game.upgrades.ww && game.upgrades.a2f;
+  },
 };
 
 var upgradePrices = {
@@ -792,15 +805,15 @@ var upgradePrices = {
     resAmt("population", "200000000000")
   ],
   wand: [resAmt("gold", 45000)],
-  bastion: [resAmt("gold", 750000000), resAmt("gear", 1000)],
+  bastion: [resAmt("gold", 750000000), resAmt("gear", 500)],
   shadow: [resAmt("gold", 250000000)],
-  sea: [resAmt("gold", 950000000), resAmt("gear", 1000)],
+  sea: [resAmt("gold", 950000000), resAmt("gear", 500)],
   ww: [resAmt("gold", 1600000)],
   com1: [resAmt("gold", "2000000000")],
   com2: [resAmt("gold", "2500000000")],
   com3: [resAmt("gold", "3000000000")],
   a1f: [resAmt("gold", 5678765)],
-  a2f: [resAmt("gold", "40000000000"), resAmt("gear", 2500)],
+  a2f: [resAmt("gold", "40000000000"), resAmt("gear", 1500)],
   empire2: [
     resAmt("gold", "1000000000000000"),
     resAmt("activePlayers", "200000000000000"),
@@ -808,6 +821,7 @@ var upgradePrices = {
   ],
   trivia: [resAmt("gold", 1000000000)],
   tree: [resAmt("gold", "100000000000"), resAmt("crowns", 115)],
+  dark: [resAmt("gold", "75000000000")],
 };
 
 var upgradeImmediateEffects = {
@@ -1132,9 +1146,11 @@ function doStaffBusiness() {
   var loot = getRandomInt(2, 6);
   var headCount = [
     "legendary", "transcendent", "archmage", "promethean", "exalted", "prodigious",
-  ].map(staffCount).reduce(function (a, b) {
+  ].map(function (name, index) {
+    return staffCount(name) * (index >= 4 && game.upgrades.dark ? 2 : 1);
+  }).reduce(function (a, b) {
     return a + b;
-  }, 0)
+  }, 0);
   function addBoost(upgrade, from, n, d) {
     if (game.upgrades[upgrade]) {
       for (var i = from; i < goldEarnings.length; ++i)
@@ -1164,10 +1180,12 @@ function doStaffBusiness() {
   if (game.upgrades.goldFarm) {
     game.resources.loot = game.resources.loot.plus(Math.round(loot / 20));
   }
-  if (game.upgrades.ww &&
-      20 * Math.random() < Math.min(0.1, 0.005 * headCount)) {
-    game.resources.gear =
-      game.resources.gear.plus(1 + Math.floor(1.15 * Math.random()));
+  if (game.upgrades.ww) {
+    game.resources.gear = game.resources.gear.plus(Math.floor(0.001 * headCount));
+    if (20 * Math.random() < 0.001 * (headCount % 1000)) {
+      game.resources.gear =
+        game.resources.gear.plus(1 + Math.floor(1.15 * Math.random()));
+    }
   }
   var power = staffCount("fanboy");
   var pvpLordPower = 2.8 * staffCount("pvpLord");
@@ -1267,7 +1285,10 @@ function refreshTriviaButtonState() {
 
 function doAutomaticTrivia() {
   if (game.timer % (3600 * 20 / 10) == 0) {
-    game.resources.crowns = game.resources.crowns.add(5 * staffCount("trivia"));
+    var amt = 5 * staffCount("trivia");
+    game.resources.crowns = game.resources.crowns.add(amt);
+    logMessage("Your trivia monkeys have earned " +
+      shorten(amt) + " crowns for you.");
   }
 }
 
