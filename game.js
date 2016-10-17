@@ -1,5 +1,5 @@
 
-const VERSION = 5;
+const VERSION = 6;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -1137,17 +1137,17 @@ function calculateBAGR() {
   return res;
 }
 function refreshPersuasivePower() {
-  if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
-    return;
-  game.hres.pp = Math.min(100, game.hres.pp + getRandomInt(1, 3));
-  var fact = 1 + 0.003 * (staffCount.fanboy + staffCount.pvpLord);
+  var fact = 1 + 0.003 * (staffCount("fanboy") + staffCount("pvpLord"));
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
-  if (getRandomArbitrary(0, 2500) * slowdown <
-      (game.hres.agr - calculateBAGR()) * fact) {
+  if (getRandomArbitrary(0, 1500) * slowdown <
+      Math.pow(game.hres.agr - calculateBAGR(), 0.9) * fact) {
     logMessage("The euphoria subsides...");
     game.hres.agr--;
   }
+  if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
+    return;
+  game.hres.pp = Math.min(100, game.hres.pp + getRandomInt(1, 3));
 }
 
 function recruitAutomatically(power) {
@@ -1249,7 +1249,7 @@ function sellLoot() {
   }
   var lv = game.resources.level.toJSNumber();
   var rate = Math.floor(
-    lv * (getRandomArbitrary(45, 65) + lv));
+    lv * (getRandomArbitrary(40, 60) + lv * 2));
   if (game.upgrades.bazaar)
     rate = Math.floor(rate * getRandomArbitrary(1.8, 2.2));
   console.log(rate);

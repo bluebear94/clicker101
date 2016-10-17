@@ -26,8 +26,7 @@ body {
 div.resources {
   text-align: right;
   font-family: "DejaVu Sans Mono", monospace;
-  font-weight: bold;
-  font-size: 20;
+  font-size: 16;
 }
 
 td {
