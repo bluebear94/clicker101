@@ -1,50 +1,51 @@
 <html>
-	<head>
-		<title> Clicker101 </title>
-		<script src="BigInteger.min.js"></script>
-		<script src="game.js"></script>
-		<link rel="stylesheet" type="text/css" href="style.css">
-		<meta charset="utf-8">
-	</head>
-	<body onmousemove="updateTooltipLocation(event)">
-		<div class="stats">
-			<div class="bigbutton">
-				<button type="button" id="thebutton" onclick="clickBigButton(false)"> Hold your horses </button> <br>
-				<button type="button" id="recruit" onclick="recruit()"> Hold your horses </button> <br>
-				<button type="button" id="sell" onclick="sellLoot()"> Hold your horses </button> <br>
-				<button type="button" id="doTrivia" onclick="tryTrivia()"> Hold your horses </button> <br>
-				<span id="version"></span><br>
-				<span id="tps"></span>
-			</div>
-			<div class="resources">
-				Game not loaded yet!
-			</div>
-		</div>
-		<div class="container">
-			<div class="left">
-				<h2> Options </h2>
-				<button type="button" onclick="save()"> Save </button>
-				<button type="button" onclick="load()"> Load </button>
-				<button type="button" onclick="seppukuByButton()"> Die </button>
-				<button type="button" onclick="resetGame()"> Wipe Save </button>
-				<button type="button" id="autosave" onclick="toggleAutoSave()"> Autosave ON </button>
-				<h2> Log </h2>
-				<div id="msglog"> </div>
-			</div>
-			<div class="scrollbar">
-				<h2> Staff </h2>
-				<table id="staff">
-				</table>
-			</div>
-			<div class="scrollbar">
-				<h2> Upgrades </h2>
-				<div id="upgrades">
-				</div>
-				<h2> Purchased Upgrades </h2>
-				<div id="purchased-upgrades">
-				</div>
-			</div>
-		</div>
-		<div class="tooltip" id="tooltip" visible="false"> </div>
-	</body>
+  <head>
+    <title> Clicker101 </title>
+    <script src="BigInteger.min.js"></script>
+    <script src="game.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8">
+  </head>
+  <body onmousemove="updateTooltipLocation(event)">
+    <div class="stats">
+      <div class="bigbutton">
+        <button type="button" id="thebutton" onclick="clickBigButton(false)"> Hold your horses </button> <br>
+        <button type="button" id="recruit" onclick="recruit()"> Hold your horses </button> <br>
+        <button type="button" id="sell" onclick="sellLoot()"> Hold your horses </button> <br>
+        <button type="button" id="doTrivia" onclick="tryTrivia()"> Hold your horses </button> <br>
+        <span id="version"></span><br>
+        <span id="tps"></span><br>
+        <a href="updates.html" target="_blank">Updates</a>
+      </div>
+      <div class="resources">
+        Game not loaded yet!
+      </div>
+    </div>
+    <div class="container">
+      <div class="left">
+        <h2> Options </h2>
+        <button type="button" onclick="save()"> Save </button>
+        <button type="button" onclick="load()"> Load </button>
+        <button type="button" onclick="seppukuByButton()"> Die </button>
+        <button type="button" onclick="resetGame()"> Wipe Save </button>
+        <button type="button" id="autosave" onclick="toggleAutoSave()"> Autosave ON </button>
+        <h2> Log </h2>
+        <div id="msglog"> </div>
+      </div>
+      <div class="scrollbar">
+        <h2> Staff </h2>
+        <table id="staff">
+        </table>
+      </div>
+      <div class="scrollbar">
+        <h2> Upgrades </h2>
+        <div id="upgrades">
+        </div>
+        <h2> Purchased Upgrades </h2>
+        <div id="purchased-upgrades">
+        </div>
+      </div>
+    </div>
+    <div class="tooltip" id="tooltip" visible="false"> </div>
+  </body>
 </html>

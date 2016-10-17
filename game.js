@@ -1,3 +1,6 @@
+
+const VERSION = 2;
+
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
   Object.defineProperty(window, "localStorage", new (function () {
@@ -87,7 +90,6 @@ var needRefresh = false;
 var lastWordsSaid = false;
 var tooltipVisible = false;
 const MAX_LOG_ENTRIES = 100;
-const VERSION = 1;
 
 function beautify(n) {
   var ns = n.toString();
@@ -625,6 +627,7 @@ var upgradeNames = {
   a2f: "Defeat Shadow Queen",
   empire2: "Galactic empire",
   trivia: "KI Trivia",
+  tree: "B*****by's Wisdom",
 };
 
 var upgradeDescriptions = {
@@ -666,6 +669,7 @@ var upgradeDescriptions = {
   a2f: "Defeat M********, the shadow lord, and <b>you and exalted or higher wizards get five times more gold.</b>",
   empire2: "***ard101 is so popular, aliens are buying computers just to play it themselves. <b>Clicking is ten times more effective.</b>",
   trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
+  tree: "+1% to gold drops per hour of play.",
 };
 
 var upgradeRequirements = {
@@ -751,6 +755,9 @@ var upgradeRequirements = {
     return game.resources.activePlayers.divide(100).greaterOrEquals(game.resources.population);
   },
   trivia: levelMinimum(80),
+  tree: function() {
+    return game.upgrades.a2f;
+  },
 };
 
 var upgradePrices = {
@@ -800,6 +807,7 @@ var upgradePrices = {
     resAmt("population", "2000000000000")
   ],
   trivia: [resAmt("gold", 1000000000)],
+  tree: [resAmt("gold", "100000000000"), resAmt("crowns", 115)],
 };
 
 var upgradeImmediateEffects = {
@@ -989,6 +997,11 @@ function getXP(amt) {
   }
 }
 
+function treeRate() {
+  var hours = Math.floor(game.timer / (3600 * 20));
+  return 100 + hours;
+}
+
 function clickBigButton(quiet) {
   var gold = bigInt(Math.floor(
     getRandomArbitrary(0, 4) +
@@ -1004,6 +1017,7 @@ function clickBigButton(quiet) {
   if (game.upgrades.empire) gold = gold.times(4);
   if (game.upgrades.shadow) gold = gold.times(3);
   if (game.upgrades.a2f) gold = gold.times(5);
+  if (game.upgrades.tree) gold = gold.times(treeRate()).divide(100);
   if (game.upgrades.test) gold = gold.plus(2);
   if (game.upgrades.wand)
     gold = gold.plus(game.gps.divide(100));
@@ -1137,6 +1151,7 @@ function doStaffBusiness() {
   addBoost("sun2", 9, 2, 1);
   addBoost("tc", 0, 6, 2);
   addBoost("empire", 0, 4, 1);
+  addBoost("tree", 0, treeRate(), 100);
   addBoost("shadow", 11, 3, 1);
   addBoost("a2f", 12, 5, 1);
   game.gps = goldEarnings.reduce(function (a, b) {
@@ -1295,7 +1310,12 @@ function tick() {
 function main() {
   var ver = document.getElementById("version");
   ver.innerHTML = "Clicker101 version " + VERSION + ", written by Uruwi. I am not related to KI.";
-  resetGame();
+  try {
+    load();
+  } catch (e) {
+    console.log(e.message);
+    resetGame();
+  }
   setInterval(tick, 50);
   setInterval(autoSave, 60000);
 }
