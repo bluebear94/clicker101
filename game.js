@@ -1294,6 +1294,7 @@ function tick() {
     refreshLog();
     refreshAutoSaveMessage();
     refreshTriviaButtonState();
+    doAutomaticTrivia();
     ++game.timer;
     var now = Date.now();
     var delta = now - last;
