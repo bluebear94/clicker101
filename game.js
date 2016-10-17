@@ -1122,9 +1122,9 @@ function recruit() {
   }
   else if (players == 1) logMessage("Someone joins the game.");
   else logMessage("You recruit " + players + " new wizards.");
-  if (getRandomInt(0, 10000) < game.hres.pp) {
+  if (getRandomInt(0, 100000) < game.hres.pp) {
     logMessage("You feel that the game is becoming more popular.");
-    game.hres.agr += 1;
+    game.hres.agr += getRandomInt(1, 6);
   }
   game.hres.pp = Math.max(0, game.hres.pp - getRandomInt(0, 4));
 }
@@ -1140,10 +1140,10 @@ function refreshPersuasivePower() {
   var fact = 1 + 0.001 * (staffCount("fanboy") + 1.2 * staffCount("pvpLord"));
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
-  if (getRandomArbitrary(0, 1500) * slowdown <
+  if (getRandomArbitrary(0, 15000) * slowdown <
       Math.pow(game.hres.agr - calculateBAGR(), 0.9) * fact) {
     logMessage("The euphoria subsides...");
-    game.hres.agr--;
+    game.hres.agr -= getRandomInt(1, 6);
   }
   if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
     return;
@@ -1154,9 +1154,9 @@ function recruitAutomatically(power) {
   var players = getRandomArbitrary(0, power / 40) + getRandomArbitrary(0, power / 40);
   players = Math.ceil(maxPersuaded(players));
   game.resources.activePlayers = game.resources.activePlayers.add(players);
-  if (getRandomInt(0, 20000) < Math.min(power, 1000)) {
+  if (getRandomInt(0, 200000) < Math.pow(power, 0.95)) {
     logMessage("You feel that the game is becoming more popular.");
-    game.hres.agr += 1;
+    game.hres.agr += getRandomInt(1, 6);
   }
 }
 
