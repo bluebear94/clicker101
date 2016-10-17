@@ -855,7 +855,7 @@ var upgradePrices = {
 
 var upgradeImmediateEffects = {
   shadow: function() {
-    game.hres.agr -= 2000;
+    game.hres.agr -= 200;
   },
   com1: function() {
     getXP(10000);
