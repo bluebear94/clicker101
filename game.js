@@ -855,7 +855,7 @@ var upgradePrices = {
 
 var upgradeImmediateEffects = {
   shadow: function() {
-    game.hres.agr -= 200;
+    game.hres.agr -= 50;
   },
   com1: function() {
     getXP(10000);
@@ -1137,7 +1137,7 @@ function calculateBAGR() {
   return res;
 }
 function refreshPersuasivePower() {
-  var fact = 1 + 0.003 * (staffCount("fanboy") + staffCount("pvpLord"));
+  var fact = 1 + 0.001 * (staffCount("fanboy") + 1.2 * staffCount("pvpLord"));
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
   if (getRandomArbitrary(0, 1500) * slowdown <
