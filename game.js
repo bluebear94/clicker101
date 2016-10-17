@@ -127,6 +127,22 @@ function shorten(n) {
   }
 }
 
+function beautifyTime(t) {
+  var s = [];
+  if (t >= 3600 * 20) {
+    var h = Math.floor(t / (3600 * 20));
+    s.push([h + " hours"]);
+    t -= 3600 * 20 * h
+  }
+  if (t >= 60 * 20) {
+    var m = Math.floor(t / (60 * 20));
+    s.push([m + " minutes"]);
+    t -= 60 * 20 * m
+  } 
+  s.push([(t / 20).toFixed(1) + " seconds"]);
+  return s.join(", ");
+}
+
 // Thanks http://stackoverflow.com/a/196991/3130218
 function toTitleCase(str) {
   if (str === undefined) return "uNDEFINED";
@@ -218,15 +234,15 @@ function logMessage(msg) {
 
 function refreshLog() {
   if (needRefresh) {
-    msgLog = msgLog.concat(iMsgLog.reverse());
+    msgLog = iMsgLog.concat(msgLog);
     iMsgLog = [];
     if (msgLog.length >= 2 * MAX_LOG_ENTRIES) {
-      msgLog = msgLog.slice(MAX_LOG_ENTRIES);
+      msgLog = msgLog.slice(0, MAX_LOG_ENTRIES);
     }
     var recentMessages = msgLog.slice(
-      Math.max(0, msgLog.length - MAX_LOG_ENTRIES));
+      0, Math.min(msgLog.length - 1, MAX_LOG_ENTRIES));
     var box = document.getElementById("msglog");
-    box.innerHTML = recentMessages.reverse().join('<br>');
+    box.innerHTML = recentMessages.join('<br>');
     needRefresh = false;
     if (game.died) lastWordsSaid = true;
   }
@@ -369,9 +385,11 @@ var staffNames = {
   legendary: "legendary wizard",
   transcendent: "transcendent wizard",
   pvpLord: "PvP warlord",
-  archmage: "Archmage wizard",
-  promethean: "Promethean wizard",
-  exalted: "Exalted wizard",
+  archmage: "archmage wizard",
+  promethean: "promethean wizard",
+  exalted: "exalted wizard",
+  trivia: "trivia monkey",
+  prodigious: "prodigious wizard",
 };
 var staffDescriptions = {
   novice: "A beginner to farm for you.",
@@ -387,9 +405,11 @@ var staffDescriptions = {
   legendary: "A level 60 wizard who is now leaving C******a and entering Z*****a.",
   transcendent: "An even-higher level wizard to farm large amounts of gold.",
   pvpLord: "A PvP master to attract even more players.",
-  archmage: "Best of luck to this wizard on Azteca.",
-  promethean: "<b><i>OH NO WHAT HAPPENED TO AZTECA</i></b>",
+  archmage: "Best of luck to this wizard on A****a.",
+  promethean: "<b><i>OH NO WHAT HAPPENED TO A****A</i></b>",
   exalted: "This wizard restored B****** and defeated M********, saving the spiral. Sizzle, young wizard, sizzle.",
+  trivia: "A NEET to complete trivias for you.",
+  prodigious: "The strongest in ***ard101, at least until M***** is released.",
 };
 var baseStaffPrices = {
   novice: [resAmt("gold", 30)],
@@ -408,6 +428,8 @@ var baseStaffPrices = {
   archmage: [resAmt("gold", 5600000)],
   promethean: [resAmt("gold", 27800000)],
   exalted: [resAmt("gold", 345678901)],
+  trivia: [resAmt("gold", 10000000), resAmt("crowns", 50, 20)],
+  prodigious: [resAmt("gold", "88888888888")],
 };
 
 function staffCount(name) {
@@ -431,6 +453,7 @@ var wizardClasses = {
   archmage: true,
   promethean: true,
   exalted: true,
+  prodigious: true,
 };
 function wizardCount() {
   var c = 0;
@@ -472,6 +495,10 @@ var staffRequirements = {
   archmage: levelMinimum(80),
   promethean: levelMinimum(90),
   exalted: levelMinimum(100),
+  trivia: function() {
+    return game.resources.crowns.greaterOrEquals(150);
+  },
+  prodigious: levelMinimum(110),
 }
 
 function updateStaffCount(name, amt) {
@@ -500,22 +527,22 @@ function buyStaff(name) {
   return [];
 }
 
-function neededToString(needed) {
+function neededToString(needed, and) {
   if (!needed.length) return "NOTHING";
   if (needed.length == 1)
     return resourceNames[needed[0]];
   if (needed.length == 2)
-    return resourceNames[needed[0]] + " or " + resourceNames[needed[1]];
-  var realNames = neeeded.map(function (nm) { return resourceNames[nm]; });
+    return resourceNames[needed[0]] + (and ? " and " : " or ") + resourceNames[needed[1]];
+  var realNames = needed.map(function (nm) { return resourceNames[nm]; });
   return realNames.slice(0, needed.length - 1).join(", ") +
-    ", or " + resourceNames[needed[needed.length - 1]];
+    (and ? ", and " : ", or ") + resourceNames[needed[needed.length - 1]];
 }
 
 function buyStaffVerbose(name) {
   var needed = buyStaff(name);
   logMessage(needed.length == 0 ?
     "You successfully purchased " + attachA(staffNames[name]) + "." :
-    "You don't have enough " + neededToString(needed) + ".");
+    "You don't have enough " + neededToString(needed, false) + ".");
 }
 
 function updateStaff() {
@@ -596,6 +623,8 @@ var upgradeNames = {
   com3: "Third Chamber of the Mind",
   a1f: "Defeat M**********",
   a2f: "Defeat Shadow Queen",
+  empire2: "Galactic empire",
+  trivia: "KI Trivia",
 };
 
 var upgradeDescriptions = {
@@ -625,7 +654,7 @@ var upgradeDescriptions = {
   sun2: "Sharpened Blade, Potent Trap, and Primordial, oh my! <b>You and archmage and higher wizards collect twice as much gold.</b>",
   runLuis: "X*****a is falling, and <b>auto-clicking is twice as frequent.</b>",
   empire: "Now that the whole world is playing ***ard101, <b>gold output is quadrupled.</b>",
-  wand: "Clicking is boosted by <b>0.1% of GPS.</b>",
+  wand: "Clicking is boosted by <b>1% of GPS.</b>",
   bastion: "Claim whatever artifact you need and restore the B****** to its former glory.",
   shadow: "Gold output is tripled for you and promethean or higher wizards, but <b>the game will take a hit in popularity.</b>",
   sea: "Cross the treacherous sea inside the great beast. To the other side (and no, I don't mean dying)!",
@@ -635,6 +664,8 @@ var upgradeDescriptions = {
   com3: "Being ousted from R****wood, you partner with T***** C***r**** at the Crescent Beach for the promise of a great prize...",
   a1f: "It all started when someone lost his wife and lost his sit. Time to end it.",
   a2f: "Defeat M********, the shadow lord, and <b>you and exalted or higher wizards get five times more gold.</b>",
+  empire2: "***ard101 is so popular, aliens are buying computers just to play it themselves. <b>Clicking is ten times more effective.</b>",
+  trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
 };
 
 var upgradeRequirements = {
@@ -716,6 +747,10 @@ var upgradeRequirements = {
     return game.resources.level.greaterOrEquals(100) &&
       game.upgrades.com3;
   },
+  empire2: function() {
+    return game.resources.activePlayers.divide(100).greaterOrEquals(game.resources.population);
+  },
+  trivia: levelMinimum(80),
 };
 
 var upgradePrices = {
@@ -759,6 +794,12 @@ var upgradePrices = {
   com3: [resAmt("gold", "3000000000")],
   a1f: [resAmt("gold", 5678765)],
   a2f: [resAmt("gold", "40000000000"), resAmt("gear", 2500)],
+  empire2: [
+    resAmt("gold", "1000000000000000"),
+    resAmt("activePlayers", "200000000000000"),
+    resAmt("population", "2000000000000")
+  ],
+  trivia: [resAmt("gold", 1000000000)],
 };
 
 var upgradeImmediateEffects = {
@@ -774,6 +815,13 @@ var upgradeImmediateEffects = {
   com3: function() {
     getXP(10000);
   },
+  trivia: function() {
+    game.special.trivia = {
+      timeLeft: 3600 * 20,
+      left: 10,
+      cooldown: 0,
+    }
+  }
 }
 
 function reposition(elem, x, y) {
@@ -865,7 +913,7 @@ function buyUpgradeVerbose(name) {
   var needed = buyUpgrade(name);
   logMessage(needed.length == 0 ?
     "You successfully purchased " + upgradeNames[name] + "." :
-    "You need more " + neededToString(needed) + ".");
+    "You need more " + neededToString(needed, true) + ".");
 }
 
 function loadUpgrades() {
@@ -946,8 +994,6 @@ function clickBigButton(quiet) {
     getRandomArbitrary(0, 4) +
     getRandomArbitrary(1.5, 2.5) * game.resources.level
   ));
-  if (game.upgrades.wand)
-    gold = gold.plus(game.gps.divide(1000));
   if (game.upgrades.lessons) gold = gold.times(3).divide(2);
   if (game.upgrades.bears) gold = gold.times(2);
   if (game.upgrades.valor) gold = gold.times(2);
@@ -959,6 +1005,8 @@ function clickBigButton(quiet) {
   if (game.upgrades.shadow) gold = gold.times(3);
   if (game.upgrades.a2f) gold = gold.times(5);
   if (game.upgrades.test) gold = gold.plus(2);
+  if (game.upgrades.wand)
+    gold = gold.plus(game.gps.divide(100));
   var xp =
     bigInt(3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level)));
   if (game.upgrades.questStack) xp = xp.times(3).divide(2);
@@ -975,6 +1023,10 @@ function clickBigButton(quiet) {
     crit = true;
     if (!quiet) logMessage("CRITICAL!");
   }
+  if (game.upgrades.empire2) {
+    gold = gold.times(10);
+    xp = xp.times(10);
+   }
   if (game.upgrades.goldFarm) {
     game.resources.loot = game.resources.loot.plus(getRandomInt(2, 6 + 4 * crit));
   }
@@ -1061,10 +1113,11 @@ function doStaffBusiness() {
     bigInt(staffCount("archmage")).times(getRandomInt(2500, 2750)),
     bigInt(staffCount("promethean")).times(getRandomInt(8000, 9001)),
     bigInt(staffCount("exalted")).times(getRandomInt(28000, 28500)),
+    bigInt(staffCount("prodigious")).times(getRandomInt(987654, 1234567)),
   ]
   var loot = getRandomInt(2, 6);
   var headCount = [
-    "legendary", "transcendent", "archmage", "promethean", "exalted",
+    "legendary", "transcendent", "archmage", "promethean", "exalted", "prodigious",
   ].map(staffCount).reduce(function (a, b) {
     return a + b;
   }, 0)
@@ -1149,6 +1202,68 @@ function luis() {
   }
 }
 
+function resetTrivia() {
+  game.special.trivia.timeLeft = 3600 * 20;
+  game.special.trivia.left = 10;
+}
+
+function tickTriviaCooldowns() {
+  if (!game.special.trivia) return;
+  game.special.trivia.timeLeft--;
+  game.special.trivia.cooldown = Math.max(0, game.special.trivia.cooldown - 1);
+  if (game.special.trivia.timeLeft == 0) resetTrivia();
+}
+
+function doTrivia() {
+  game.special.trivia.left--;
+  game.special.trivia.cooldown = 200;
+  game.resources.crowns = game.resources.crowns.add(10);
+}
+
+function tryTrivia() {
+  if (!game.special.trivia) return false;
+  if (game.special.trivia.left == 0) return false;
+  if (game.special.trivia.cooldown > 0) return false;
+  doTrivia();
+  return true;
+}
+
+function refreshTriviaButtonState() {
+  var button = document.getElementById("doTrivia");
+  if (game.died) {
+    button.innerHTML = "You can't click from the other side!";
+    button.setAttribute("disabled", "disabled");
+  } else if (!game.special.trivia) {
+    button.innerHTML = "???";
+    button.setAttribute("disabled", "disabled");
+  } else if (game.special.trivia.left == 0) {
+    button.innerHTML = beautifyTime(game.special.trivia.timeLeft) +
+      " until more trivia";
+    button.setAttribute("disabled", "disabled");
+  } else if (game.special.trivia.cooldown > 0) {
+    button.innerHTML = "Trivia: " + game.special.trivia.left + " left (" +
+      beautifyTime(game.special.trivia.cooldown) + ")";
+    button.setAttribute("disabled", "disabled");
+  } else {
+    button.innerHTML = "Trivia: " + game.special.trivia.left + " left";
+    button.removeAttribute("disabled");
+  }
+}
+
+function doAutomaticTrivia() {
+  if (game.timer % (3600 * 20 / 10) == 0) {
+    game.resources.crowns = game.resources.crowns.add(5 * staffCount("trivia"));
+  }
+}
+
+
+var last = Date.now();
+var deltas = [
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+];
+var i = 0;
+var sum = 0;
 function tick() {
   if (!game.died || !lastWordsSaid) {
     updatePopulation();
@@ -1158,11 +1273,22 @@ function tick() {
     refreshPersuasivePower();
     littleBrother();
     luis();
+    tickTriviaCooldowns();
     gearCrafting();
     displayResources();
     refreshLog();
     refreshAutoSaveMessage();
+    refreshTriviaButtonState();
     ++game.timer;
+    var now = Date.now();
+    var delta = now - last;
+    sum += delta - deltas[i];
+    deltas[i] = delta;
+    i = (i + 1) % deltas.length;
+    var tps = deltas.length * 1000 / sum;
+    document.getElementById("tps").innerHTML =
+      tps.toFixed(2) + "tps";
+    last = now;
   }
 }
 
