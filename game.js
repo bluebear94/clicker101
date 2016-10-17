@@ -1,5 +1,5 @@
 
-const VERSION = 6;
+const VERSION = 7;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -129,19 +129,23 @@ function shorten(n) {
   }
 }
 
+function S(n) {
+  return n == 1 ? "" : "s";
+}
+
 function beautifyTime(t) {
   var s = [];
   if (t >= 3600 * 20) {
     var h = Math.floor(t / (3600 * 20));
-    s.push([h + " hours"]);
+    s.push([h + " hour" + S(h)]);
     t -= 3600 * 20 * h
   }
   if (t >= 60 * 20) {
     var m = Math.floor(t / (60 * 20));
-    s.push([m + " minutes"]);
+    s.push([m + " minute" + S(m)]);
     t -= 60 * 20 * m
   } 
-  s.push([(t / 20).toFixed(1) + " seconds"]);
+  s.push([(t / 20).toFixed(1) + " second" + S(t / 20)]);
   return s.join(", ");
 }
 
@@ -398,6 +402,7 @@ var staffNames = {
   exalted: "exalted wizard",
   trivia: "trivia monkey",
   prodigious: "prodigious wizard",
+  gun: "explosive bow",
 };
 var staffDescriptions = {
   novice: "A beginner to farm for you.",
@@ -418,6 +423,7 @@ var staffDescriptions = {
   exalted: "This wizard restored B****** and defeated M********, saving the spiral. Sizzle, young wizard, sizzle.",
   trivia: "A NEET to complete trivias for you.",
   prodigious: "The strongest in ***ard101, at least until M***** is released.",
+  gun: "These are also called guns.",
 };
 var baseStaffPrices = {
   novice: [resAmt("gold", 30)],
@@ -438,6 +444,7 @@ var baseStaffPrices = {
   exalted: [resAmt("gold", 345678901)],
   trivia: [resAmt("gold", 10000000), resAmt("crowns", 50, 20)],
   prodigious: [resAmt("gold", "88888888888")],
+  gun: [resAmt("crowns", 120000, 20)],
 };
 
 function staffCount(name) {
@@ -507,6 +514,7 @@ var staffRequirements = {
     return game.resources.crowns.greaterOrEquals(150);
   },
   prodigious: levelMinimum(110),
+  gun: levelMinimum(110),
 }
 
 function updateStaffCount(name, amt) {
@@ -639,6 +647,8 @@ var upgradeNames = {
   arena3: "Orichalcum-lined arena",
   arena4: "Draconium-lined arena",
   antiTurtle: "Anti-turtling tactics",
+  luis3: "First-run double gear drop",
+  luisTrivia: "Dino school",
 };
 
 var upgradeDescriptions = {
@@ -686,6 +696,8 @@ var upgradeDescriptions = {
   arena3: "<b>PvP warlords will also earn gear every battle.</b>",
   arena4: "<b>Euphoria wears off even more slowly.</b>",
   antiTurtle: "PvP battles take <b>25% less time</b>.",
+  luis3: "Automatic clicking yields <b>65 times as much gold.</b>",
+  luisTrivia: "Every time you click automatically, you have a <b>1 in 1440 chance of automatically doing a trivia</b> if you can.",
 };
 
 var upgradeRequirements = {
@@ -796,6 +808,14 @@ var upgradeRequirements = {
   antiTurtle: function() {
     return game.upgrades.arena2;
   },
+  luis3: function() {
+    return game.resources.level.greaterOrEquals(104) &&
+      game.upgrades.runLuis && game.upgrades.dark;
+  },
+  luisTrivia: function() {
+    return game.upgrades.runLuis && game.upgrades.trivia &&
+      staffCount("trivia") >= 5;
+  }
 };
 
 var upgradePrices = {
@@ -851,6 +871,8 @@ var upgradePrices = {
   arena3: [resAmt("gold", "100000000"), resAmt("tickets", 36000)],
   arena4: [resAmt("gold", "10000000000"), resAmt("tickets", 360000)],
   antiTurtle: [resAmt("gold", "1000000000"), resAmt("crowns", 300)],
+  luis3: [resAmt("gold", "45000000000000")],
+  luisTrivia: [resAmt("gold", "75000000000000"), resAmt("crowns", 200)],
 };
 
 var upgradeImmediateEffects = {
@@ -1064,6 +1086,7 @@ function clickBigButton(quiet) {
   if (game.upgrades.test) gold = gold.plus(2);
   if (game.upgrades.wand)
     gold = gold.plus(game.gps.divide(100));
+  if (game.upgrades.luis3 && quiet) gold = gold.times(65);
   var xp =
     bigInt(3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level)));
   if (game.upgrades.questStack) xp = xp.times(3).divide(2);
@@ -1266,6 +1289,8 @@ function luis() {
   if (game.upgrades.runLuis) period /= 2;
   if (game.upgrades.luis && game.timer % period == 0) {
     clickBigButton(true);
+    if (game.upgrades.luisTrivia && Math.random() < (1 / 1440))
+      tryTrivia();
   }
 }
 
