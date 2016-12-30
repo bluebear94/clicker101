@@ -1333,7 +1333,8 @@ function luis() {
 }
 
 function resetTrivia() {
-  game.special.trivia.timeLeft = 3600 * 20;
+  if (game.special.trivia.timeLeft === undefined) game.special.trivia.timeLeft = 3600 * 20;
+  else game.special.trivia.timeLeft += 3600 * 20;
   game.special.trivia.left = 10;
 }
 
@@ -1341,7 +1342,7 @@ function tickTriviaCooldowns(d) {
   if (!game.special.trivia) return;
   game.special.trivia.timeLeft -= d;
   game.special.trivia.cooldown = Math.max(0, game.special.trivia.cooldown - d);
-  if (game.special.trivia.timeLeft == 0) resetTrivia();
+  if (game.special.trivia.timeLeft < 0) resetTrivia();
 }
 
 function doTrivia() {
