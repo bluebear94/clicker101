@@ -1,5 +1,23 @@
 
-const VERSION = 9;
+const VERSION = 10;
+
+var flashInterval;
+var flashTimeout;
+function flash(message, period, times) {
+  clearInterval(flashInterval);
+  clearTimeout(flashTimeout);
+  function callback() {
+    var banner = document.getElementsByClassName("thebanner")[0];
+    var contents = banner.innerHTML;
+    banner.innerHTML = (contents == message) ? "&nbsp;" : message;
+  }
+  flashInterval = setInterval(callback, period);
+  flashTimeout = setTimeout(function () {
+    var banner = document.getElementsByClassName("thebanner")[0];
+    banner.innerHTML = "";
+    clearInterval(flashInterval);
+  }, 2 * period * times);
+}
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -271,6 +289,7 @@ function resetGame() {
     gear: bigInt.zero,
     loot: bigInt.zero,
     tickets: bigInt.zero,
+    wolf: bigInt.zero,
   };
   game.hres = {
     gps: bigInt.zero,
@@ -338,6 +357,7 @@ var resourceNames = {
   activePlayers: "active players",
   population: "population",
   tickets: "arena tickets",
+  wolf: "wolf points",
 };
 
 function resAmt(name, qty, inflation) {
@@ -432,6 +452,7 @@ var staffNames = {
   trivia: "trivia monkey",
   prodigious: "prodigious wizard",
   gun: "explosive bow",
+  champion: "champion wizard",
 };
 var staffDescriptions = {
   novice: "A beginner to farm for you.",
@@ -453,6 +474,7 @@ var staffDescriptions = {
   trivia: "A NEET to complete trivias for you.",
   prodigious: "The strongest in ***ard101, at least until M***** is released.",
   gun: "These are also called guns.",
+  champion: "Let's be honest. These wizards are even <i>worse</i> than exalteds.",
 };
 var baseStaffPrices = {
   novice: [resAmt("gold", 30)],
@@ -474,6 +496,7 @@ var baseStaffPrices = {
   trivia: [resAmt("gold", 10000000), resAmt("crowns", 50, 20)],
   prodigious: [resAmt("gold", "88888888888")],
   gun: [resAmt("crowns", 120000, 20)],
+  champion: [resAmt("gold", "999999999999")],
 };
 
 function staffCount(name) {
@@ -498,6 +521,7 @@ var wizardClasses = {
   promethean: true,
   exalted: true,
   prodigious: true,
+  champion: true,
 };
 function wizardCount() {
   var c = 0;
@@ -544,6 +568,7 @@ var staffRequirements = {
   },
   prodigious: levelMinimum(110),
   gun: levelMinimum(110),
+  champion: levelMinimum(120),
 }
 
 function updateStaffCount(name, amt) {
@@ -656,11 +681,13 @@ var upgradeNames = {
   tc: "Treasure cards",
   luis: "Secrets from Luis",
   sun2: "Sun magic part 2",
+  ihateaz: "I hate A****a",
   runLuis: "Run Run Dino!",
   empire: "World empire",
   wand: "Finger-shaped wand",
   bastion: "B****** Restoration Project",
   shadow: "Shadow magic",
+  evil: "So you have to be evil",
   sea: "Starf*** Sea",
   ww: "W****w***s",
   com1: "First Chamber of the Mind",
@@ -678,6 +705,11 @@ var upgradeNames = {
   antiTurtle: "Anti-turtling tactics",
   luis3: "First-run double gear drop",
   luisTrivia: "Dino school",
+  graduate: "Graduation ceremony",
+  penguin: "Penguin world",
+  the714: "Basstille Day",
+  baba: "Rope Baba Yaga",
+  darkHumor: "It really gets dark from here",
 };
 
 var upgradeDescriptions = {
@@ -704,12 +736,14 @@ var upgradeDescriptions = {
   critical: "Clicking has a <b>10% chance of doubling your yield.<b> Your brother has a <b>10% chance to get twice as much experience.</b>",
   tc: "All wizards earn <b>20% more gold.</b>",
   luis: "You automatically click <b>every 5 seconds.</b>",
+  ihateaz: "You get <b>one wolf point.</b>",
   sun2: "Sharpened Blade, Potent Trap, and Primordial, oh my! <b>You and archmage and higher wizards collect twice as much gold.</b>",
   runLuis: "X*****a is falling, and <b>auto-clicking is twice as frequent.</b>",
   empire: "Now that the whole world is playing ***ard101, <b>gold output is quadrupled.</b>",
   wand: "Clicking is boosted by <b>1% of GPS.</b>",
   bastion: "Claim whatever artifact you need and restore the B****** to its former glory.",
   shadow: "Gold output is tripled for you and promethean or higher wizards, but <b>the game will take a hit in popularity.</b>",
+  evil: "You get <b>another wolf point.</b>",
   sea: "Cross the treacherous sea inside the great beast. To the other side (and no, I don't mean dying)!",
   ww: "Legendary or higher wizards <b>occasionally get gear</b>.",
   com1: "Now you must land in the mind of the Shadow Queen, back when she was still a youngster, when she was in A*****, under the command of A******, and plot to kill the king.",
@@ -727,6 +761,11 @@ var upgradeDescriptions = {
   antiTurtle: "PvP battles take <b>25% less time</b>.",
   luis3: "Automatic clicking yields <b>65 times as much gold.</b>",
   luisTrivia: "Every time you click automatically, you have a <b>1 in 1440 chance of automatically doing a trivia</b> if you can.",
+  graduate: "<b>You graduate.</b> How quaint. Now take your double gold from clicking and exalted or higher wizards.",
+  penguin: "Get another stew pet key. Interestingly, the real name of this world starts with a P too.",
+  the714: "Yeah you know what happens. Raid the prison, free your allies, and take back W***... er, P********whatever.",
+  baba: "Because she's an old hag and <i>totally</i> won't care. (Note: if you really rope people, you are a <b>MEGA</b> deck.)",
+  darkHumor: "You get <b>two wolf points.</b>",
 };
 
 var upgradeRequirements = {
@@ -772,6 +811,7 @@ var upgradeRequirements = {
   critical: levelMinimum(50),
   tc: staffMinimum("novice", 50),
   luis: levelMinimum(75),
+  ihateaz: levelMinimum(81),
   sun2: function() {
     return game.resources.level.greaterOrEquals(86) &&
       game.upgrades.sun;
@@ -788,6 +828,9 @@ var upgradeRequirements = {
   shadow: function() {
     return game.resources.level.greaterOrEquals(95) &&
       game.upgrades.bastion;
+  },
+  evil: function () {
+    return game.upgrades.shadow;
   },
   sea: function() {
     return game.resources.level.greaterOrEquals(95) &&
@@ -844,7 +887,24 @@ var upgradeRequirements = {
   luisTrivia: function() {
     return game.upgrades.runLuis && game.upgrades.trivia &&
       staffCount("trivia") >= 5;
-  }
+  },
+  graduate: function() {
+    return game.upgrades.tree;
+  },
+  penguin: function() {
+    return game.upgrades.graduate;
+  },
+  the714: function() {
+    return game.resources.level.greaterOrEquals(102) &&
+      game.upgrades.penguin;
+  },
+  baba: function() {
+    return game.resources.level.greaterOrEquals(104) &&
+      game.upgrades.the714;
+  },
+  darkHumor: function() {
+    return game.upgrades.baba;
+  },
 };
 
 var upgradePrices = {
@@ -871,6 +931,7 @@ var upgradePrices = {
   critical: [resAmt("gold", 80000)],
   tc: [resAmt("gold", 2000)],
   luis: [resAmt("gold", 250000000)],
+  ihateaz: [resAmt("crowns", 50)],
   sun2: [resAmt("gold", 350000000)],
   runLuis: [resAmt("gold", 650000000)],
   empire: [
@@ -881,6 +942,7 @@ var upgradePrices = {
   wand: [resAmt("gold", 45000)],
   bastion: [resAmt("gold", 750000000), resAmt("gear", 500)],
   shadow: [resAmt("gold", 250000000)],
+  evil: [resAmt("crowns", 150)],
   sea: [resAmt("gold", 950000000), resAmt("gear", 500)],
   ww: [resAmt("gold", 1600000)],
   com1: [resAmt("gold", "2000000000")],
@@ -902,7 +964,16 @@ var upgradePrices = {
   antiTurtle: [resAmt("gold", "1000000000"), resAmt("crowns", 300)],
   luis3: [resAmt("gold", "45000000000000")],
   luisTrivia: [resAmt("gold", "75000000000000"), resAmt("crowns", 200)],
+  graduate: [resAmt("gold", 1)],
+  penguin: [resAmt("gold", "100000000000000")],
+  the714: [resAmt("gold", "56000000000000")],
+  baba: [resAmt("gold", "78000000000000"), resAmt("gear", 5000)],
+  darkHumor: [resAmt("crowns", 450)],
 };
+
+function getWolfPoint(amt) {
+  game.resources.wolf = game.resources.wolf.plus(amt || 1);
+}
 
 var upgradeImmediateEffects = {
   shadow: function() {
@@ -923,6 +994,17 @@ var upgradeImmediateEffects = {
       left: 10,
       cooldown: 0,
     }
+  },
+  ihateaz: getWolfPoint,
+  evil: getWolfPoint,
+  graduate: function() {
+    flash("YOU GRADUATED", 400, 2);
+  },
+  baba: function() {
+    flash("YOU ARE A MEGA DECK", 400, 6);
+  },
+  darkHumor: function() {
+    getWolfPoint(2);
   }
 }
 
@@ -1238,6 +1320,7 @@ function doStaffBusiness(dt) {
     bigInt(staffCount("promethean")).times(Math.floor(dt * getRandomArbitrary(8000, 9001))),
     bigInt(staffCount("exalted")).times(Math.floor(dt * getRandomArbitrary(28000, 28500))),
     bigInt(staffCount("prodigious")).times(Math.floor(dt * getRandomArbitrary(987654, 1234567))),
+    bigInt(staffCount("champion")).times(Math.floor(dt * getRandomArbitrary(7777777, 9999999))),
   ]
   var loot = getRandomInt(2, 6);
   var headCount = [
@@ -1266,6 +1349,7 @@ function doStaffBusiness(dt) {
   addBoost("tree", 0, treeRate(), 100);
   addBoost("shadow", 11, 3, 1);
   addBoost("a2f", 12, 5, 1);
+  addBoost("graduate", 12, 2, 1);
   var gps = goldEarnings.reduce(function (a, b) {
     return a.add(b);
   }, bigInt.zero);

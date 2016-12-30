@@ -124,3 +124,14 @@ div.resources {
   -ms-overflow-style: none;
 }
 
+div.thebanner {
+  height: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  color: red;
+  font-size: 24pt;
+  text-align: center;
+  font-weight: bold;
+  font-family: "DejaVu Sans Mono", monospace;
+}
