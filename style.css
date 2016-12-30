@@ -102,12 +102,12 @@ span.cantAfford {
   background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
   text-align: left;
-  padding: 5px 5px;
+  padding: 10px 10px;
   border-radius: 6px;
   position: absolute;
   z-index: 1;
   display: none;
-  width: 500px;
+  width: 300px;
 }
 
 div.bigbutton {

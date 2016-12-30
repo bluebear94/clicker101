@@ -899,13 +899,19 @@ var upgradeImmediateEffects = {
 
 function reposition(elem, x, y) {
   var height = window.innerHeight;
+  var width = window.innerWidth;
   var tooltipHeight = elem.offsetHeight;
+  var tooltipWidth = elem.offsetWidth;
   if (y + tooltipHeight + 50 >= height) {
     elem.style.top = y - tooltipHeight + 5;
   } else {
     elem.style.top = y + 5;
   }
-  elem.style.left = x + 5;
+  if (x + tooltipWidth + 15 >= width) {
+    elem.style.left = x - tooltipWidth + 5;
+  } else {
+    elem.style.left = x + 5;
+  }
 }
 
 function displayTooltip(body, x, y) {
