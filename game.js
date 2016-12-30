@@ -1,5 +1,5 @@
 
-const VERSION = 7;
+const VERSION = 8;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -657,7 +657,7 @@ var upgradeDescriptions = {
   bears: "You establish trade with the bears, so <b>you and adept or higher wizards collect twice as much gold.</b>",
   littleBrother: "Your little brother starts playing the game. He's not very good, but he collects <b>1 XP per second</b> for you.",
   questStack: "You quest more efficiently; <b>clicking yields 50% more experience.</b>",
-  lessons: "Our favorite anthropomorphic horses offers you a lesson in combat; <b>you and initiate or higher wizards collect 50% more gold.</b>",
+  lessons: "Our favorite anthropomorphic unicorn offers you a lesson in combat; <b>you and initiate or higher wizards collect 50% more gold.</b>",
   party: "With a team, you can complete dungeons faster. <b>Getting boss drops from clicking is twice as likely.</b>",
   arena: "<b>The game shouldn't die as quickly.</b> (Despite what SkythekidRS suggests, the arena is <i>not</i> lined with butter.)",
   valor: "Fight the hardest boss in the whole first arc, and earn the glory of <b>double gold to you and master or higher wizards!</b>",
@@ -667,7 +667,7 @@ var upgradeDescriptions = {
   winter: "Provides access to Wintertusk.",
   goldFarm: "You find a boss that drops great loot. <b>You and legendary or higher wizards have a chance to get loot.</b>",
   sun: "As you find ways to make your attacks even powerful, <b>you and legendary or higher wizards collect 50% more gold.</b>",
-  bazaar: "You find that E*** is willing to buy your loot, so <b>you get twice as much money from selling loot.</b> (Needless to say, he isn't as willing to take your Waterworks gear.)",
+  bazaar: "You find that E*** is willing to buy your loot, so <b>you get twice as much money from selling loot.</b> (Needless to say, he isn't as willing to take your W****w**ks gear.)",
   youtube: "People start watching your videos, and <b>recruiting is twice as powerful.</b>",
   war: "As you fight tooth and nail against those spinning 3-D names coupled with loud music, <b>recruiting is twice as powerful.</b>",
   pvpVideos: "You start recording yourself playing PvP matches. <b>The game should take even longer to die.</b>",
@@ -692,7 +692,7 @@ var upgradeDescriptions = {
   trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
   tree: "<b>+1% to gold drops</b> per hour of play.",
   dark: "Exalted or higher wizards drop <b>even more gear</b>.",
-  arena2: "<b>The game should take even longer to die.</b> (Great. We were waiting for the time those sky fan foo awk is would shot op about gold.)",
+  arena2: "<b>The game should take even longer to die.</b> (Great. We were waiting for the time those sky fan fakes would shot op about gold.)",
   arena3: "<b>PvP warlords will also earn gear every battle.</b>",
   arena4: "<b>Euphoria wears off even more slowly.</b>",
   antiTurtle: "PvP battles take <b>25% less time</b>.",
