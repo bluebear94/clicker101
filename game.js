@@ -965,9 +965,9 @@ var upgradePrices = {
   luis3: [resAmt("gold", "45000000000000")],
   luisTrivia: [resAmt("gold", "75000000000000"), resAmt("crowns", 200)],
   graduate: [resAmt("gold", 1)],
-  penguin: [resAmt("gold", "100000000000000")],
-  the714: [resAmt("gold", "56000000000000")],
-  baba: [resAmt("gold", "78000000000000"), resAmt("gear", 5000)],
+  penguin: [resAmt("gold", "1000000000000")],
+  the714: [resAmt("gold", "560000000000")],
+  baba: [resAmt("gold", "780000000000"), resAmt("gear", 5000)],
   darkHumor: [resAmt("crowns", 450)],
 };
 
