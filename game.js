@@ -1,5 +1,5 @@
 
-const VERSION = 10;
+const VERSION = 11;
 
 var flashInterval;
 var flashTimeout;
@@ -449,6 +449,7 @@ var staffNames = {
   archmage: "archmage wizard",
   promethean: "promethean wizard",
   exalted: "exalted wizard",
+  overlord: "PvP overlord",
   trivia: "trivia monkey",
   prodigious: "prodigious wizard",
   gun: "explosive bow",
@@ -471,6 +472,7 @@ var staffDescriptions = {
   archmage: "Best of luck to this wizard on A****a.",
   promethean: "<b><i>OH NO WHAT HAPPENED TO A****A</i></b>",
   exalted: "This wizard restored B****** and defeated M********, saving the spiral. Sizzle, young wizard, sizzle.",
+  overlord: "Why settle for 700 rank when you can go for 1000?",
   trivia: "A NEET to complete trivias for you.",
   prodigious: "The strongest in ***ard101, at least until M***** is released.",
   gun: "These are also called guns.",
@@ -493,6 +495,7 @@ var baseStaffPrices = {
   archmage: [resAmt("gold", 5600000)],
   promethean: [resAmt("gold", 27800000)],
   exalted: [resAmt("gold", 345678901)],
+  overlord: [resAmt("gold", 456789012)],
   trivia: [resAmt("gold", 10000000), resAmt("crowns", 50, 20)],
   prodigious: [resAmt("gold", "88888888888")],
   gun: [resAmt("crowns", 120000, 20)],
@@ -523,6 +526,9 @@ var wizardClasses = {
   prodigious: true,
   champion: true,
 };
+var wizardClassesAsList = [];
+for (var key in wizardClasses)
+  wizardClassesAsList.push(key);
 function wizardCount() {
   var c = 0;
   for (var key in wizardClasses) {
@@ -563,6 +569,9 @@ var staffRequirements = {
   archmage: levelMinimum(80),
   promethean: levelMinimum(90),
   exalted: levelMinimum(100),
+  overlord: function () {
+    return game.upgrades.arena3 && game.resources.level.greaterOrEquals(100);
+  },
   trivia: function() {
     return game.resources.crowns.greaterOrEquals(150);
   },
@@ -710,6 +719,8 @@ var upgradeNames = {
   the714: "Basstille Day",
   baba: "Rope Baba Yaga",
   darkHumor: "It really gets dark from here",
+  arcanum: "Arcanum access",
+  synergy2: "Synergy II: Border between Spiral and Arcanum",
 };
 
 var upgradeDescriptions = {
@@ -766,6 +777,8 @@ var upgradeDescriptions = {
   the714: "Yeah you know what happens. Raid the prison, free your allies, and take back W***... er, P********whatever.",
   baba: "Because she's an old hag and <i>totally</i> won't care. (Note: if you really rope people, you are a <b>MEGA</b> deck.)",
   darkHumor: "You get <b>two wolf points.</b>",
+  arcanum: "What in the world is that?",
+  synergy2: "Wizards below prodigious will gain 10% more gold for every prodigious or higher wizard. Prodigious or higher wizards gain 0.1% more gold for every wizard below prodigious.",
 };
 
 var upgradeRequirements = {
@@ -905,6 +918,13 @@ var upgradeRequirements = {
   darkHumor: function() {
     return game.upgrades.baba;
   },
+  arcanum: function() {
+    return game.resources.level.greaterOrEquals(106) &&
+      game.upgrades.baba;
+  },
+  synergy2: function() {
+    return game.upgrades.arcanum;
+  },
 };
 
 var upgradePrices = {
@@ -969,6 +989,8 @@ var upgradePrices = {
   the714: [resAmt("gold", "560000000000")],
   baba: [resAmt("gold", "780000000000"), resAmt("gear", 5000)],
   darkHumor: [resAmt("crowns", 450)],
+  arcanum: [resAmt("gold", "100000000000000")],
+  synergy2: [resAmt("gold", "15000000000000")],
 };
 
 function getWolfPoint(amt) {
@@ -1005,7 +1027,7 @@ var upgradeImmediateEffects = {
   },
   darkHumor: function() {
     getWolfPoint(2);
-  }
+  },
 }
 
 function reposition(elem, x, y) {
@@ -1281,7 +1303,7 @@ function calculateBAGR() {
   return res;
 }
 function refreshPersuasivePower(d) {
-  var fact = 1 + 0.001 * (staffCount("fanboy") + 1.2 * staffCount("pvpLord"));
+  var fact = 1 + 0.001 * (staffCount("fanboy") + 2.3 * staffCount("pvpLord") + 27.5 * staffCount("overlord"));
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
   if (getRandomArbitrary(0, 15000) * d * slowdown <
@@ -1304,6 +1326,15 @@ function recruitAutomatically(power) {
   }
 }
 
+function prodParts() {
+  var preProd = wizardClassesAsList.slice(0, 13);
+  var prod = wizardClassesAsList.slice(13);
+  function f(l) {
+    return l.map(staffCount).reduce(function (a, b) { return a + b; }, 0);
+  }
+  return [f(preProd), f(prod)];
+}
+
 function doStaffBusiness(dt) {
   var goldEarnings = [
     bigInt(staffCount("novice")).times(Math.floor(dt * getRandomArbitrary(1, 11))).divide(10),
@@ -1323,26 +1354,26 @@ function doStaffBusiness(dt) {
     bigInt(staffCount("champion")).times(Math.floor(dt * getRandomArbitrary(7777777, 9999999))),
   ]
   var loot = getRandomInt(2, 6);
-  var headCount = [
-    "legendary", "transcendent", "archmage", "promethean", "exalted", "prodigious",
-  ].map(function (name, index) {
+  var headCount = wizardClassesAsList.slice(8).map(function (name, index) {
     return staffCount(name) * (index >= 4 && game.upgrades.dark ? 2 : 1);
   }).reduce(function (a, b) {
     return a + b;
   }, 0);
-  function addBoost(upgrade, from, n, d) {
+  function addBoost(upgrade, from, n, d, to) {
     if (game.upgrades[upgrade]) {
-      for (var i = from; i < goldEarnings.length; ++i)
+      if (to === undefined) to = 9999;
+      for (var i = from; i < Math.min(to, goldEarnings.length); ++i)
         goldEarnings[i] = goldEarnings[i].times(n).divide(d);
     }
     if (from >= 7) loot *= n / d;
   }
+  var parts = prodParts();
   addBoost("lessons", 2, 3, 2);
   addBoost("bears", 4, 2, 1);
   addBoost("valor", 6, 2, 1);
   addBoost("rank7", 6, 2, 1);
   addBoost("sun", 7, 3, 2);
-  addBoost("synergy1", 7, 100 + staffCount("pvpLord"), 100);
+  addBoost("synergy1", 7, 100 + staffCount("pvpLord") + staffCount("overlord"), 100);
   addBoost("sun2", 9, 2, 1);
   addBoost("tc", 0, 6, 2);
   addBoost("empire", 0, 4, 1);
@@ -1350,6 +1381,8 @@ function doStaffBusiness(dt) {
   addBoost("shadow", 11, 3, 1);
   addBoost("a2f", 12, 5, 1);
   addBoost("graduate", 12, 2, 1);
+  addBoost("synergy2", 0, 10 + parts[1], 10, 13);
+  addBoost("synergy2", 13, 1000 + parts[0], 1000);
   var gps = goldEarnings.reduce(function (a, b) {
     return a.add(b);
   }, bigInt.zero);
@@ -1369,7 +1402,7 @@ function doStaffBusiness(dt) {
     }
   }
   var power = staffCount("fanboy");
-  var pvpLordPower = 2.8 * staffCount("pvpLord");
+  var pvpLordPower = 2.8 * staffCount("pvpLord") + 14.8 * staffCount("overlord");
   if (game.upgrades.synergy1) pvpLordPower *= (1 + 0.001 * wizardCount());
   power += dt * pvpLordPower;
   recruitAutomatically(dt * power);
@@ -1478,7 +1511,7 @@ function doAutomaticTrivia() {
 function getArenaTickets() {
   var period = game.upgrades.antiTurtle ? 3 : 4;
   if (timerRings(50) && timerRingCount(50) % period == 0) {
-    var c = staffCount("pvpLord");
+    var c = staffCount("pvpLord") + 5 * staffCount("overlord");
     var t = 0;
     for (var i = 0; i < c; ++i) {
       t += Math.random() < 0.5 ? 10 : 2;
