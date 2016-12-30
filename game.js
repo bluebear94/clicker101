@@ -889,7 +889,7 @@ var upgradeRequirements = {
       staffCount("trivia") >= 5;
   },
   graduate: function() {
-    return game.upgrades.tree;
+    return game.upgrades.a2f;
   },
   penguin: function() {
     return game.upgrades.graduate;
