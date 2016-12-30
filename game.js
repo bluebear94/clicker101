@@ -287,6 +287,8 @@ function resetGame() {
   game.cumulGold = 0;
   game.cumulGear = 0;
   game.timer = 0;
+  game.timer2 = {};
+  game.timer3 = {};
   game.gps = bigInt.zero;
   game.special = {};
   game.version = VERSION;
@@ -297,6 +299,28 @@ function resetGame() {
   var purchasedUpgradeList = document.getElementById("purchased-upgrades");
   purchasedUpgradeList.innerHTML = "";
   onLife();
+}
+
+function requestTimer(freq) {
+  if (game.timer2[freq] === undefined) {
+    game.timer2[freq] = 0;
+    game.timer3[freq] = 0;
+  }
+}
+
+function updateTimers(d) {
+  for (var freq in game.timer2) {
+    if (game.timer2[freq] >= freq) {
+      game.timer2[freq] -= freq;
+      ++game.timer3[freq];
+    }
+    game.timer2[freq] += d;
+  }
+}
+
+function timerRings(freq) {
+  requestTimer(freq);
+  return game.timer2[freq] >= freq;
 }
 
 var resourceNames = {
@@ -1123,11 +1147,15 @@ function clickBigButton(quiet) {
   if (!quiet) logMessage("You received " + shorten(xp) + " experience!");
 }
 
-function updatePopulation() {
+function updatePopulation(d) {
+  var pgratio = Math.min(1e3, Math.pow(1 + 1e-6 * game.hres.pgr, d));
+  var agratio = Math.min(1e3, Math.pow(1 + 1e-7 * game.hres.agr, d));
+  var pgrating = Math.floor(pgratio * 1e6);
+  var agrating = Math.floor(agratio * 1e7);
   game.resources.population =
-    game.resources.population.times(1000000 + game.hres.pgr).divide(1000000);
+    game.resources.population.times(pgrating).divide(1000000);
   game.resources.activePlayers =
-    game.resources.activePlayers.times(10000000 + game.hres.agr).divide(10000000);
+    game.resources.activePlayers.times(agrating).divide(10000000);
   if (game.resources.activePlayers.lesser(10000)) {
     logMessage("Unfortunately, ***ard101 has closed down because there are no longer enough players.");
     seppuku();
@@ -1165,18 +1193,18 @@ function calculateBAGR() {
   if (game.upgrades.arena2) res += 2;
   return res;
 }
-function refreshPersuasivePower() {
+function refreshPersuasivePower(d) {
   var fact = 1 + 0.001 * (staffCount("fanboy") + 1.2 * staffCount("pvpLord"));
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
-  if (getRandomArbitrary(0, 15000) * slowdown <
+  if (getRandomArbitrary(0, 15000) * d * slowdown <
       Math.pow(game.hres.agr - calculateBAGR(), 0.9) * fact) {
     logMessage("The euphoria subsides...");
     game.hres.agr -= getRandomInt(1, 6);
   }
   if (game.hres.pp >= 100 + game.resources.level || getRandomInt(0, 100) > 0)
     return;
-  game.hres.pp = Math.min(100, game.hres.pp + getRandomInt(1, 3));
+  game.hres.pp = Math.min(100, game.hres.pp + Math.floor(d * getRandomArbitrary(1, 2)));
 }
 
 function recruitAutomatically(power) {
@@ -1189,22 +1217,22 @@ function recruitAutomatically(power) {
   }
 }
 
-function doStaffBusiness() {
+function doStaffBusiness(dt) {
   var goldEarnings = [
-    bigInt(staffCount("novice")).times(getRandomInt(1, 11)).divide(10),
-    bigInt(staffCount("apprentice")).times(getRandomInt(1, 9)).divide(2),
-    bigInt(staffCount("initiate")).times(getRandomInt(2, 7)),
-    bigInt(staffCount("journeyman")).times(getRandomInt(4, 9)),
-    bigInt(staffCount("adept")).times(getRandomInt(10, 20)),
-    bigInt(staffCount("magus")).times(getRandomInt(25, 35)),
-    bigInt(staffCount("master")).times(getRandomInt(40, 65)),
-    bigInt(staffCount("grandmaster")).times(getRandomInt(100, 135)),
-    bigInt(staffCount("legendary")).times(getRandomInt(300, 350)),
-    bigInt(staffCount("transcendent")).times(getRandomInt(950, 1150)),
-    bigInt(staffCount("archmage")).times(getRandomInt(2500, 2750)),
-    bigInt(staffCount("promethean")).times(getRandomInt(8000, 9001)),
-    bigInt(staffCount("exalted")).times(getRandomInt(28000, 28500)),
-    bigInt(staffCount("prodigious")).times(getRandomInt(987654, 1234567)),
+    bigInt(staffCount("novice")).times(Math.floor(dt * getRandomArbitrary(1, 11))).divide(10),
+    bigInt(staffCount("apprentice")).times(Math.floor(dt * getRandomArbitrary(1, 9))).divide(2),
+    bigInt(staffCount("initiate")).times(Math.floor(dt * getRandomArbitrary(2, 7))),
+    bigInt(staffCount("journeyman")).times(Math.floor(dt * getRandomArbitrary(4, 9))),
+    bigInt(staffCount("adept")).times(Math.floor(dt * getRandomArbitrary(10, 20))),
+    bigInt(staffCount("magus")).times(Math.floor(dt * getRandomArbitrary(25, 35))),
+    bigInt(staffCount("master")).times(Math.floor(dt * getRandomArbitrary(40, 65))),
+    bigInt(staffCount("grandmaster")).times(Math.floor(dt * getRandomArbitrary(100, 135))),
+    bigInt(staffCount("legendary")).times(Math.floor(dt * getRandomArbitrary(300, 350))),
+    bigInt(staffCount("transcendent")).times(Math.floor(dt * getRandomArbitrary(950, 1150))),
+    bigInt(staffCount("archmage")).times(Math.floor(dt * getRandomArbitrary(2500, 2750))),
+    bigInt(staffCount("promethean")).times(Math.floor(dt * getRandomArbitrary(8000, 9001))),
+    bigInt(staffCount("exalted")).times(Math.floor(dt * getRandomArbitrary(28000, 28500))),
+    bigInt(staffCount("prodigious")).times(Math.floor(dt * getRandomArbitrary(987654, 1234567))),
   ]
   var loot = getRandomInt(2, 6);
   var headCount = [
@@ -1241,10 +1269,10 @@ function doStaffBusiness() {
     game.resources.gold.add(game.gps.divide(20)).add(Math.floor(game.cumulGold / 20));
   game.cumulGold -= 20 * Math.floor(game.cumulGold / 20);
   if (game.upgrades.goldFarm) {
-    game.resources.loot = game.resources.loot.plus(Math.round(loot * headCount / 2000));
+    game.resources.loot = game.resources.loot.plus(Math.round(dt * loot * headCount / 2000));
   }
   if (game.upgrades.ww) {
-    game.resources.gear = game.resources.gear.plus(Math.floor(0.001 * headCount));
+    game.resources.gear = game.resources.gear.plus(Math.floor(0.001 * dt * headCount));
     if (20 * Math.random() < 0.001 * (headCount % 1000)) {
       game.resources.gear =
         game.resources.gear.plus(1 + Math.floor(1.15 * Math.random()));
@@ -1253,18 +1281,18 @@ function doStaffBusiness() {
   var power = staffCount("fanboy");
   var pvpLordPower = 2.8 * staffCount("pvpLord");
   if (game.upgrades.synergy1) pvpLordPower *= (1 + 0.001 * wizardCount());
-  power += pvpLordPower;
-  recruitAutomatically(power);
+  power += dt * pvpLordPower;
+  recruitAutomatically(dt * power);
 }
 
 function littleBrother() {
   var amt = 1;
   if (game.upgrades.critical && Math.random() < 0.1) amt *= 2;
-  if (game.upgrades.littleBrother && game.timer % 20 == 0) getXP(amt);
+  if (game.upgrades.littleBrother && timerRings(20)) getXP(amt);
 }
 
-function gearCrafting() {
-  game.cumulGear += 0.0002 * (game.staff.gearCrafter || 0);
+function gearCrafting(d) {
+  game.cumulGear += 0.0002 * d * (game.staff.gearCrafter || 0);
   if (!game.resources.gear || !game.resources.gear.xor)
     game.resources.gear = bigInt.zero;
   game.resources.gear = game.resources.gear.add(Math.floor(game.cumulGear));
@@ -1291,9 +1319,7 @@ function sellLoot() {
 }
 
 function luis() {
-  var period = 100;
-  if (game.upgrades.runLuis) period /= 2;
-  if (game.upgrades.luis && game.timer % period == 0) {
+  if (game.upgrades.luis && timerRings(50) && (game.upgrades.runLuis || game.timer3[50] % 2 == 0)) {
     clickBigButton(true);
     if (game.upgrades.luisTrivia && Math.random() < (1 / 1440))
       tryTrivia();
@@ -1305,10 +1331,10 @@ function resetTrivia() {
   game.special.trivia.left = 10;
 }
 
-function tickTriviaCooldowns() {
+function tickTriviaCooldowns(d) {
   if (!game.special.trivia) return;
-  game.special.trivia.timeLeft--;
-  game.special.trivia.cooldown = Math.max(0, game.special.trivia.cooldown - 1);
+  game.special.trivia.timeLeft -= d;
+  game.special.trivia.cooldown = Math.max(0, game.special.trivia.cooldown - d);
   if (game.special.trivia.timeLeft == 0) resetTrivia();
 }
 
@@ -1349,7 +1375,7 @@ function refreshTriviaButtonState() {
 }
 
 function doAutomaticTrivia() {
-  if (game.timer % (3600 * 20 / 10) == 0) {
+  if (timerRings(3600 * 20 / 10)) {
     var amt = 5 * staffCount("trivia");
     game.resources.crowns = game.resources.crowns.add(amt);
     if (amt > 0)
@@ -1359,8 +1385,8 @@ function doAutomaticTrivia() {
 }
 
 function getArenaTickets() {
-  var period = game.upgrades.antiTurtle ? 150 : 200;
-  if (game.timer % period == 0) {
+  var period = game.upgrades.antiTurtle ? 3 : 4;
+  if (timerRings(50) && game.timer3[50] % period == 0) {
     var c = staffCount("pvpLord");
     var t = 0;
     for (var i = 0; i < c; ++i) {
@@ -1380,26 +1406,30 @@ var deltas = [
 ];
 var i = 0;
 var sum = 0;
+var delta = 50;
 function tick() {
   if (!game.died || !lastWordsSaid) {
-    updatePopulation();
+    var d = delta * 20 / 1000;
+    // console.log(d);
+    updatePopulation(d);
     updateStaff();
     updateUpgrades();
-    doStaffBusiness();
-    refreshPersuasivePower();
+    doStaffBusiness(d);
+    refreshPersuasivePower(d);
     littleBrother();
     luis();
-    tickTriviaCooldowns();
-    gearCrafting();
-    getArenaTickets();
+    tickTriviaCooldowns(d);
+    gearCrafting(d);
+    getArenaTickets(d);
     displayResources();
     refreshLog();
     refreshAutoSaveMessage();
     refreshTriviaButtonState();
     doAutomaticTrivia();
     ++game.timer;
+    updateTimers(d);
     var now = Date.now();
-    var delta = now - last;
+    delta = now - last;
     sum += delta - deltas[i];
     deltas[i] = delta;
     i = (i + 1) % deltas.length;
