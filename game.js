@@ -1,5 +1,5 @@
 
-const VERSION = 8;
+const VERSION = 9;
 
 // Thanks https://developer.mozilla.org/en-US/docs/Web/API/Storage/LocalStorage
 if (!window.localStorage) {
@@ -304,7 +304,7 @@ function resetGame() {
 function requestTimer(freq) {
   if (game.timer2[freq] === undefined) {
     game.timer2[freq] = 0;
-    game.timer3[freq] = 0;
+    game.timer3[freq] = Math.floor(game.timer / freq);
   }
 }
 
@@ -321,6 +321,11 @@ function updateTimers(d) {
 function timerRings(freq) {
   requestTimer(freq);
   return game.timer2[freq] >= freq;
+}
+
+function timerRingCount(freq) {
+  requestTimer(freq);
+  return game.timer3[freq];
 }
 
 var resourceNames = {
@@ -1093,7 +1098,7 @@ function getXP(amt) {
 }
 
 function treeRate() {
-  var hours = Math.floor(game.timer / (3600 * 20));
+  var hours = timerRingCount(3600 * 20);
   return 100 + hours;
 }
 
@@ -1261,12 +1266,13 @@ function doStaffBusiness(dt) {
   addBoost("tree", 0, treeRate(), 100);
   addBoost("shadow", 11, 3, 1);
   addBoost("a2f", 12, 5, 1);
-  game.gps = goldEarnings.reduce(function (a, b) {
+  var gps = goldEarnings.reduce(function (a, b) {
     return a.add(b);
   }, bigInt.zero);
-  game.cumulGold += game.gps.mod(20).valueOf();
+  game.gps = gps.times(2000).divide(Math.max(1, Math.round(100 * dt)));
+  game.cumulGold += gps.mod(20).valueOf();
   game.resources.gold =
-    game.resources.gold.add(game.gps.divide(20)).add(Math.floor(game.cumulGold / 20));
+    game.resources.gold.add(gps.divide(20)).add(Math.floor(game.cumulGold / 20));
   game.cumulGold -= 20 * Math.floor(game.cumulGold / 20);
   if (game.upgrades.goldFarm) {
     game.resources.loot = game.resources.loot.plus(Math.round(dt * loot * headCount / 2000));
@@ -1319,7 +1325,7 @@ function sellLoot() {
 }
 
 function luis() {
-  if (game.upgrades.luis && timerRings(50) && (game.upgrades.runLuis || game.timer3[50] % 2 == 0)) {
+  if (game.upgrades.luis && timerRings(50) && (game.upgrades.runLuis || timerRingCount(50) % 2 == 0)) {
     clickBigButton(true);
     if (game.upgrades.luisTrivia && Math.random() < (1 / 1440))
       tryTrivia();
@@ -1386,7 +1392,7 @@ function doAutomaticTrivia() {
 
 function getArenaTickets() {
   var period = game.upgrades.antiTurtle ? 3 : 4;
-  if (timerRings(50) && game.timer3[50] % period == 0) {
+  if (timerRings(50) && timerRingCount(50) % period == 0) {
     var c = staffCount("pvpLord");
     var t = 0;
     for (var i = 0; i < c; ++i) {
