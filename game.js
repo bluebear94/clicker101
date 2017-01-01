@@ -1,5 +1,5 @@
 
-const VERSION = 12.5;
+const VERSION = 13;
 
 var flashInterval;
 var flashTimeout;
@@ -784,12 +784,15 @@ var upgradeNames = {
   luisTrivia: "Dino school",
   graduate: "Graduation ceremony",
   penguin: "Penguin world",
+  newCrit: "New critical system",
   the714: "Basstille Day",
   baba: "Rope Baba Yaga",
   darkHumor: "It really gets dark from here",
   arcanum: "Arcanum access",
   synergy2: "Synergy II: Border between Spiral and Arcanum",
   tsubasa: "<b><i>QUACKQUACKQUACKQUACK</i></b>",
+  nezumi: "The Rat",
+  decay: "WRRRRYYYYYYY",
 };
 
 var upgradeDescriptions = {
@@ -843,12 +846,15 @@ var upgradeDescriptions = {
   luisTrivia: "Every time you click automatically, you have a <b>1 in 1440 chance of automatically doing a trivia</b> if you can.",
   graduate: "<b>You graduate.</b> How quaint. Now take your double gold from clicking and exalted or higher wizards.",
   penguin: "Get another stew pet key. Interestingly, the real name of this world starts with a P too.",
+  newCrit: "What do you mean critical has been changed?!! You get two wolf points.",
   the714: "Yeah you know what happens. Raid the prison, free your allies, and take back W***... er, P********whatever.",
   baba: "Because she's an old hag and <i>totally</i> won't care. (Note: if you really rope people, you are a <b>MEGA</b> deck.)",
   darkHumor: "You get <b>two wolf points.</b>",
   arcanum: "What in the world is that?",
   synergy2: "Wizards below prodigious will gain 10% more gold for every prodigious or higher wizard. Prodigious or higher wizards gain 0.1% more gold for every wizard below prodigious.",
   tsubasa: "You and prodigious or higher wizards gain 4 times more gold.",
+  nezumi: "Defeat the Rat. Then defeat him over and over for that deck.",
+  decay: "The feeling when you should never have leveled up past 100. You get <b>three wolf points.</b>",
 };
 
 var upgradeRequirements = {
@@ -923,6 +929,7 @@ var upgradeRequirements = {
   penguin: function() {
     return game.upgrades.graduate;
   },
+  newCrit: levelMinimum(100),
   the714: levelMinimum(102),
   baba: levelMinimum(104),
   darkHumor: function() {
@@ -933,6 +940,8 @@ var upgradeRequirements = {
     return game.upgrades.arcanum;
   },
   tsubasa: levelMinimum(108),
+  nezumi: levelMinimum(110),
+  decay: levelMinimum(113),
 };
 
 var dependentUpgrades = {
@@ -962,12 +971,15 @@ var dependentUpgrades = {
   luisTrivia: ["runLuis", "trivia"],
   graduate: ["a2f"],
   penguin: ["graduate"],
+  newCrit: ["penguin"],
   the714: ["penguin"],
   baba: ["the714"],
   darkHumor: ["baba"],
   arcanum: ["baba"],
   synergy2: ["arcanum"],
   tsubasa: ["arcanum"],
+  nezumi: ["arcanum"],
+  decay: ["nezumi"],
 }
 var defaultUpgrades = {};
 var upgradePaths = {};
@@ -1050,12 +1062,15 @@ var upgradePrices = {
   luisTrivia: [resAmt("gold", "75000000000000"), resAmt("crowns", 200)],
   graduate: [resAmt("gold", 1)],
   penguin: [resAmt("gold", "1000000000000")],
+  newCrit: [resAmt("crowns", 350)],
   the714: [resAmt("gold", "560000000000")],
   baba: [resAmt("gold", "780000000000"), resAmt("gear", 5000)],
   darkHumor: [resAmt("crowns", 450)],
   arcanum: [resAmt("gold", "100000000000000")],
   synergy2: [resAmt("gold", "15000000000000")],
-  tsubasa: [resAmt("gold", "5500000000000")]
+  tsubasa: [resAmt("gold", "5500000000000")],
+  nezumi: [resAmt("gold", "27000000000000"), resAmt("gear", 10000)],
+  decay: [resAt("crowns", 840)]
 };
 
 function getWolfPoint(amt) {
@@ -1087,11 +1102,17 @@ var upgradeImmediateEffects = {
   graduate: function() {
     flash("YOU GRADUATED", 400, 2);
   },
+  newCrit: function() {
+    getWolfPoint(2);
+  },
   baba: function() {
     flash("YOU ARE A MEGA DECK", 400, 6);
   },
   darkHumor: function() {
     getWolfPoint(2);
+  },
+  decay: function() {
+    getWolfPoint(3);
   },
 }
 
