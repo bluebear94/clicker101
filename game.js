@@ -822,7 +822,7 @@ var upgradeDescriptions = {
   ihateaz: "You get <b>one wolf point.</b>",
   sun2: "Sharpened Blade, Potent Trap, and Primordial, oh my! <b>You and archmage and higher wizards collect twice as much gold.</b>",
   runLuis: "X*****a is falling, and <b>auto-clicking is twice as frequent.</b>",
-  empire: "Now that the whole world is playing ***ard101, <b>gold output is quadrupled.</b>",
+  empire: "Now that the whole world is playing ***ard101, <b>gold output and recruiting power are quadrupled.</b>",
   wand: "Clicking is boosted by <b>1% of GPS.</b>",
   bastion: "Claim whatever artifact you need and restore the B****** to its former glory.",
   shadow: "Gold output is tripled for you and promethean or higher wizards, but <b>the game will take a hit in popularity.</b>",
@@ -834,7 +834,7 @@ var upgradeDescriptions = {
   com3: "Being ousted from R****wood, you partner with T***** C***r**** at the Crescent Beach for the promise of a great prize...",
   a1f: "It all started when someone lost his wife and lost his sit. Time to end it. If you do, <b>clicking provides 50% more experience.</b>",
   a2f: "Defeat M********, the shadow lord, and <b>you and exalted or higher wizards get five times more gold.</b>",
-  empire2: "***ard101 is so popular, aliens are buying computers just to play it themselves. <b>Clicking is ten times more effective.</b>",
+  empire2: "***ard101 is so popular, aliens are buying computers just to play it themselves. <b>Clicking and recruiting are ten times more effective.</b>",
   trivia: "Allows you to complete trivia questions <b>ten times every hour</b> for crowns.",
   tree: "<b>+1% to gold drops</b> per hour of play.",
   dark: "Exalted or higher wizards drop <b>even more gear</b>.",
@@ -1418,6 +1418,8 @@ function maxPersuaded(base) {
   if (game.upgrades.socialMedia) base *= 10;
   if (game.upgrades.youtube) base *= 2;
   if (game.upgrades.war) base *= 2;
+  if (game.upgrades.empire) base *= 4;
+  if (game.upgrades.empire2) base *= 10;
   return base;
 }
 
