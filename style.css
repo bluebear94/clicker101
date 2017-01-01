@@ -105,7 +105,7 @@ span.cantAfford {
   padding: 10px 10px;
   border-radius: 6px;
   position: absolute;
-  z-index: 1;
+  z-index: 1000000;
   display: none;
   width: 300px;
 }

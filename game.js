@@ -1,5 +1,5 @@
 
-const VERSION = 11;
+const VERSION = 12;
 
 var flashInterval;
 var flashTimeout;
@@ -179,6 +179,14 @@ function isVowelInitial(str) {
 function attachA(str) {
   return (isVowelInitial(str) ? "an " : "a ") + str;
 }
+function pluralize(str) {
+  return str + "s";
+}
+function attachNum(str, count) {
+  return count == 0 ? "no " + pluralize(str) :
+    count == 1 ? attachA(str) :
+    count + " " + pluralize(str);
+}
 
 function substSafe(obj) {
   if (obj.xor) return { xor: obj.toString() };
@@ -297,6 +305,7 @@ function resetGame() {
     bagr: -30,
     pgr: 12,
     pp: 100,
+    fact: 0,
   };
   game.staff = {};
   game.staffPrice = {};
@@ -359,6 +368,18 @@ var resourceNames = {
   tickets: "arena tickets",
   wolf: "wolf points",
 };
+var resourceDescriptions = {
+  gold: "A common loot from mobs.",
+  xp: "Another common drop. Get enough of these to level up.",
+  level: "Higher levels mean more stuff for you.",
+  crowns: "Special wizard money for good wizards.",
+  loot: "Special loot from bosses.",
+  gear: "Special gear from bosses that will make your life easier when fighting.",
+  activePlayers: "The number of people playing the game regularly.",
+  population: "The number of people on Earth.",
+  tickets: "A reward from doing well in PvP.",
+  wolf: "Because you're diligent enough to work your butt off for money but too lazy to farm for game items.",
+}
 
 function resAmt(name, qty, inflation) {
   if (!qty.xor) qty = bigInt(qty);
@@ -412,24 +433,42 @@ function growthRatePrognostics(rate) {
   return "is booming";
 }
 
+var resourceNodesMade = {};
+
+function updateResourceNode(res) {
+  var node = document.getElementById("resamt-" + res);
+  var inner = beautify(game.resources[res]);
+  if (res == "xp")
+    inner += " / " + beautify(xpNeeded(game.resources.level));
+  node.innerHTML = inner;
+}
+
+function createResourceNode(panel, res) {
+  var inner = "<div><span class=\"resource\" onmouseover=\"startResourceTooltip('" +
+    res + "', event)\" " + "onmouseout=\"hideResourceTooltip()\">" +
+    toTitleCase(resourceNames[res]) + ": " +
+    "<span id=\"resamt-" + res + "\">";
+  inner += beautify(game.resources[res]);
+  if (res == "xp")
+    inner += " / " + beautify(xpNeeded(game.resources.level));
+  inner += "</span></span></div>";
+  panel.innerHTML += inner;
+  resourceNodesMade[res] = true;
+}
+
 function displayResources() {
   if (game.died) return;
-  var resources = game.resources;
-  var resourcePanel = document.getElementsByClassName("resources")[0];
+  var resourcePanel = document.getElementsByClassName("mainResources")[0];
+  var prognosticPanel = document.getElementsByClassName("prognostics")[0];
   var inner = "";
-  for (var res in resources) {
-    if (res == "gold" || res == "xp" || resources[res].valueOf() != 0) {
-      inner += toTitleCase(resourceNames[res]) + ": " +
-        beautify(resources[res]);
-      if (res == "xp") {
-        inner += " / " + beautify(xpNeeded(game.resources.level));
-      }
-      inner += "<br>";
+  for (var res in game.resources) {
+    if (res == "gold" || res == "xp" || game.resources[res].valueOf() != 0) {
+      if (!resourceNodesMade[res]) createResourceNode(resourcePanel, res);
+      else updateResourceNode(res);
     }
   }
   var rate = game.hres.agr;
-  inner += "Your favorite game " + growthRatePrognostics(rate) + ".<br>"
-  resourcePanel.innerHTML = inner;
+  prognosticPanel.innerHTML = "Your favorite game " + growthRatePrognostics(rate) + ".<br>";
 }
 
 var staffNames = {
@@ -597,13 +636,21 @@ function updateStaffCount(name, amt) {
   staffPrice.innerHTML = priceToString(newPrice);
 }
 
-function buyStaff(name) {
+function buyOneStaff(name) {
   var needed = whatIsInsufficient(game.staffPrice[name]);
   if (needed.length != 0)
     return needed;
   deductPrice(game.staffPrice[name]);
   updateStaffCount(name, game.staff[name] + 1);
   return [];
+}
+
+function buyStaff(name, count) {
+  for (var i = 0; i < count; ++i) {
+    var needed = buyOneStaff(name);
+    if (needed.length != 0) return [i, needed];
+  }
+  return [count, []];
 }
 
 function neededToString(needed, and) {
@@ -617,29 +664,50 @@ function neededToString(needed, and) {
     (and ? ", and " : ", or ") + resourceNames[needed[needed.length - 1]];
 }
 
-function buyStaffVerbose(name) {
-  var needed = buyStaff(name);
-  logMessage(needed.length == 0 ?
-    "You successfully purchased " + attachA(staffNames[name]) + "." :
-    "You don't have enough " + neededToString(needed, false) + ".");
+function buyStaffVerbose(name, count) {
+  count = count || 1;
+  var res = buyStaff(name, count);
+  var needed = res[1];
+  var bought = res[0];
+  var messages = [];
+  if (bought > 0)
+    messages.push("You successfully purchased " +
+      attachNum(staffNames[name], bought) + ".");
+  if (needed.length != 0)
+    messages.push(
+      (bought > 0 ? "But y" : "Y") + "ou don't have enough " +
+      neededToString(needed, false) +
+      (bought > 0 ? " for more." : ".")
+    );
+  if (messages.length != 0)
+    logMessage(messages.join(" "));
+}
+
+function staffHTML(staffName) {
+  var qty = (game.staff[staffName] || 0);
+  var html = "<tr><td class=\"staffEntry\" id=\"staff-" + staffName + "\">";
+  html += "<b>" + toTitleCase(staffNames[staffName]) + "</b><br>";
+  html += staffDescriptions[staffName] + "<br>";
+  html += "Quantity: <span class=\"staffPrice\" id=\"staffQty-" +
+    staffName + "\">" + qty + "</span><br>";
+  html += "Price: <span class=\"staffPrice\" id=\"staffPrice-" +
+    staffName + "\">" +
+    priceToString(qty > 0 ? game.staffPrice[staffName] : baseStaffPrices[staffName]) +
+    "</span><br>";
+  html += "</td><td>";
+  html += "<button type=\"button\" onclick=\"buyStaffVerbose('" +
+    staffName + "')\" class=\"disableWhenDead\">Buy</button>";
+  html += "<button type=\"button\" onclick=\"buyStaffVerbose('" +
+    staffName + "', 10)\" class=\"disableWhenDead\">(10)</button>";
+  html += "</td></tr>";
+  return html;
 }
 
 function updateStaff() {
   var staffList = document.getElementById("staff");
   for (var staffName in staffRequirements) {
     if (game.staff[staffName] === undefined && staffRequirements[staffName]()) {
-      var html = "<tr><td class=\"staffEntry\" id=\"staff-" + staffName + "\">";
-      html += "<b>" + toTitleCase(staffNames[staffName]) + "</b><br>";
-      html += staffDescriptions[staffName] + "<br>";
-      html += "Quantity: <span class=\"staffPrice\" id=\"staffQty-" +
-        staffName + "\">0</span><br>";
-      html += "Price: <span class=\"staffPrice\" id=\"staffPrice-" +
-        staffName + "\">" + priceToString(baseStaffPrices[staffName]) + "</span><br>";
-      html += "</td><td>";
-      html += "<button type=\"button\" onclick=\"buyStaffVerbose('" +
-        staffName + "')\" class=\"disableWhenDead\">Buy</button>"
-      html += "</td></tr>";
-      staffList.innerHTML += html;
+      staffList.innerHTML += staffHTML(staffName);
       game.staff[staffName] = 0;
       game.staffPrice[staffName] = baseStaffPrices[staffName];
     }
@@ -650,18 +718,7 @@ function loadStaff() {
   var staffList = document.getElementById("staff");
   staffList.innerHTML = "";
   for (var staffName in game.staff) {
-    var html = "<tr><td class=\"staffEntry\" id=\"staff-" + staffName + "\">";
-    html += "<b>" + toTitleCase(staffNames[staffName]) + "</b><br>";
-    html += staffDescriptions[staffName] + "<br>";
-    html += "Quantity: <span class=\"staffPrice\" id=\"staffQty-" +
-      staffName + "\">" + game.staff[staffName] + "</span><br>";
-    html += "Price: <span class=\"staffPrice\" id=\"staffPrice-" +
-      staffName + "\">" + priceToString(game.staffPrice[staffName]) + "</span><br>";
-    html += "</td><td>";
-    html += "<button type=\"button\" onclick=\"buyStaffVerbose('" +
-      staffName + "')\" class=\"disableWhenDead\">Buy</button>"
-    html += "</td></tr>";
-    staffList.innerHTML += html;
+    staffList.innerHTML += staffHTML(staffName);
   }
 }
 
@@ -721,6 +778,7 @@ var upgradeNames = {
   darkHumor: "It really gets dark from here",
   arcanum: "Arcanum access",
   synergy2: "Synergy II: Border between Spiral and Arcanum",
+  tsubasa: "<b><i>QUACKQUACKQUACKQUACK</i></b>",
 };
 
 var upgradeDescriptions = {
@@ -779,6 +837,7 @@ var upgradeDescriptions = {
   darkHumor: "You get <b>two wolf points.</b>",
   arcanum: "What in the world is that?",
   synergy2: "Wizards below prodigious will gain 10% more gold for every prodigious or higher wizard. Prodigious or higher wizards gain 0.1% more gold for every wizard below prodigious.",
+  tsubasa: "You and prodigious or higher wizards gain 4 times more gold.",
 };
 
 var upgradeRequirements = {
@@ -822,7 +881,7 @@ var upgradeRequirements = {
   },
   synergy1: levelMinimum(70),
   critical: levelMinimum(50),
-  tc: staffMinimum("novice", 50),
+  tc: wizardMinimum(50),
   luis: levelMinimum(75),
   ihateaz: levelMinimum(81),
   sun2: function() {
@@ -925,6 +984,10 @@ var upgradeRequirements = {
   synergy2: function() {
     return game.upgrades.arcanum;
   },
+  tsubasa: function() {
+    return game.upgrades.arcanum &&
+      game.resources.level.greaterOrEquals(108);
+  },
 };
 
 var upgradePrices = {
@@ -991,6 +1054,7 @@ var upgradePrices = {
   darkHumor: [resAmt("crowns", 450)],
   arcanum: [resAmt("gold", "100000000000000")],
   synergy2: [resAmt("gold", "15000000000000")],
+  tsubasa: [resAmt("gold", "5500000000000")]
 };
 
 function getWolfPoint(amt) {
@@ -1055,6 +1119,11 @@ function displayTooltip(body, x, y) {
   reposition(tooltip, x, y);
 }
 
+function updateTooltipText(body) {
+  var tooltip = document.getElementById("tooltip");
+  tooltip.innerHTML = body;
+}
+
 function updateTooltipLocation(event) {
   if (!tooltipVisible) return;
   var tooltip = document.getElementById("tooltip");
@@ -1073,6 +1142,29 @@ function displayUpgradeTooltip(upgradeName, event) {
   html += priceToString(upgradePrices[upgradeName]) + "<br>";
   html += upgradeDescriptions[upgradeName];
   displayTooltip(html, event.clientX, event.clientY);
+}
+
+var resourceTooltipHandler = undefined;
+
+function displayResourceTooltip(resourceName, event) {
+  html = "<b>" + toTitleCase(resourceNames[resourceName]) + "</b><br>";
+  html += shorten(game.resources[resourceName]) + "<br>";
+  html += resourceDescriptions[resourceName];
+  if (event === null) updateTooltipText(html);
+  else displayTooltip(html, event.clientX, event.clientY);
+}
+
+function startResourceTooltip(resourceName, event) {
+  displayResourceTooltip(resourceName, event);
+  resourceTooltipHandler = setInterval(function() {
+    displayResourceTooltip(resourceName, null);
+  }, 100);
+}
+
+function hideResourceTooltip() {
+  hideTooltip();
+  if (resourceTooltipHandler !== null)
+    clearInterval(resourceTooltipHandler);
 }
 
 function upgradeHTML(upgradeName, purchased) {
@@ -1226,6 +1318,8 @@ function clickBigButton(quiet) {
   if (game.upgrades.wand)
     gold = gold.plus(game.gps.divide(100));
   if (game.upgrades.luis3 && quiet) gold = gold.times(65);
+  if (game.upgrades.graduate) gold = gold.times(2);
+  if (game.upgrades.tsubasa) gold = gold.times(4);
   var xp =
     bigInt(3 * Math.floor(getRandomInt(1, 5) + 1.2 * Math.sqrt(game.resources.level)));
   if (game.upgrades.questStack) xp = xp.times(3).divide(2);
@@ -1288,7 +1382,7 @@ function recruit() {
   }
   else if (players == 1) logMessage("Someone joins the game.");
   else logMessage("You recruit " + players + " new wizards.");
-  if (getRandomInt(0, 100000) < game.hres.pp) {
+  if (getRandomInt(0, 10000) < players) {
     logMessage("You feel that the game is becoming more popular.");
     game.hres.agr += getRandomInt(1, 6);
   }
@@ -1306,8 +1400,8 @@ function refreshPersuasivePower(d) {
   var fact = 1 + 0.001 * (staffCount("fanboy") + 2.3 * staffCount("pvpLord") + 27.5 * staffCount("overlord"));
   var slowdown = game.upgrades.weed ? 2 : 1;
   if (game.upgrades.arena4) slowdown *= 1.5;
-  if (getRandomArbitrary(0, 15000) * d * slowdown <
-      Math.pow(game.hres.agr - calculateBAGR(), 0.9) * fact) {
+  if (getRandomArbitrary(0, 15000) * slowdown <
+      Math.pow(game.hres.agr - calculateBAGR(), 0.9) * fact * d) {
     logMessage("The euphoria subsides...");
     game.hres.agr -= getRandomInt(1, 6);
   }
@@ -1316,13 +1410,15 @@ function refreshPersuasivePower(d) {
   game.hres.pp = Math.min(100, game.hres.pp + Math.floor(d * getRandomArbitrary(1, 2)));
 }
 
-function recruitAutomatically(power) {
+function recruitAutomatically(power, dt) {
   var players = getRandomArbitrary(0, power / 40) + getRandomArbitrary(0, power / 40);
-  players = Math.ceil(maxPersuaded(players));
+  players = Math.ceil(dt * maxPersuaded(players));
   game.resources.activePlayers = game.resources.activePlayers.add(players);
-  if (getRandomInt(0, 200000) < Math.pow(power, 0.95)) {
+  game.hres.fact += Math.pow(power, 0.95) * dt * getRandomInt(1e-5, 1.5e-5);
+  if (game.hres.fact > 0) {
     logMessage("You feel that the game is becoming more popular.");
-    game.hres.agr += getRandomInt(1, 6);
+    game.hres.agr += getRandomInt(1, 6) * Math.floor(game.hres.fact);
+    game.hres.fact -= Math.floor(game.hres.fact);
   }
 }
 
@@ -1383,6 +1479,7 @@ function doStaffBusiness(dt) {
   addBoost("graduate", 12, 2, 1);
   addBoost("synergy2", 0, 10 + parts[1], 10, 13);
   addBoost("synergy2", 13, 1000 + parts[0], 1000);
+  addBoost("tsubasa", 13, 4, 1);
   var gps = goldEarnings.reduce(function (a, b) {
     return a.add(b);
   }, bigInt.zero);
@@ -1405,7 +1502,7 @@ function doStaffBusiness(dt) {
   var pvpLordPower = 2.8 * staffCount("pvpLord") + 14.8 * staffCount("overlord");
   if (game.upgrades.synergy1) pvpLordPower *= (1 + 0.001 * wizardCount());
   power += dt * pvpLordPower;
-  recruitAutomatically(dt * power);
+  recruitAutomatically(power, dt);
 }
 
 function littleBrother() {
