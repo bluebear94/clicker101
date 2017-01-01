@@ -1070,7 +1070,7 @@ var upgradePrices = {
   synergy2: [resAmt("gold", "15000000000000")],
   tsubasa: [resAmt("gold", "5500000000000")],
   nezumi: [resAmt("gold", "27000000000000"), resAmt("gear", 10000)],
-  decay: [resAt("crowns", 840)]
+  decay: [resAmt("crowns", 840)],
 };
 
 function getWolfPoint(amt) {
