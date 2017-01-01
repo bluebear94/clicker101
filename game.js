@@ -1,5 +1,5 @@
 
-const VERSION = 12;
+const VERSION = 12.5;
 
 var flashInterval;
 var flashTimeout;
@@ -240,6 +240,9 @@ function load() {
     var amt = game.staff[key];
     game.staffPrice[key] = increase(baseStaffPrices[key], amt);
   }
+  for (var upgrade in game.upgrades) {
+    addChildrenToAvailableList(upgrade);
+  }
   game.version = VERSION;
   console.log("Loaded: " + gameStr);
   loadStaff();
@@ -326,6 +329,12 @@ function resetGame() {
   upgradeList.innerHTML = "";
   var purchasedUpgradeList = document.getElementById("purchased-upgrades");
   purchasedUpgradeList.innerHTML = "";
+  for (var upgrade in defaultUpgrades) {
+    availableUpgrades[upgrade] = defaultUpgrades[upgrade];
+  }
+  resourceNodesMade = {};
+  var resourcePanel = document.getElementsByClassName("mainResources")[0];
+  resourcePanel.innerHTML = "";
   onLife();
 }
 
@@ -462,7 +471,9 @@ function displayResources() {
   var prognosticPanel = document.getElementsByClassName("prognostics")[0];
   var inner = "";
   for (var res in game.resources) {
-    if (res == "gold" || res == "xp" || game.resources[res].valueOf() != 0) {
+    if (res == "gold" || res == "xp" ||
+        game.resources[res].valueOf() != 0 ||
+        resourceNodesMade[res] !== undefined) {
       if (!resourceNodesMade[res]) createResourceNode(resourcePanel, res);
       else updateResourceNode(res);
     }
@@ -849,33 +860,18 @@ var upgradeRequirements = {
   lessons: levelMinimum(10),
   party: levelMinimum(25),
   arena: wizardMinimum(100),
-  valor: function() {
-    return game.resources.level.greaterOrEquals(40) &&
-      game.upgrades.bears && game.upgrades.party;
-  },
+  valor: levelMinimum(40),
   rank7: levelMinimum(48),
   mount: function() { return true; },
-  weed: function() {
-    return game.resources.level.greaterOrEquals(45) &&
-      game.upgrades.valor;
-  },
-  winter: function() {
-    return game.resources.level.greaterOrEquals(55) &&
-      game.upgrades.valor;
-  },
+  weed: levelMinimum(45),
+  winter: levelMinimum(55),
   goldFarm: function() {
     return game.upgrades.winter;
   },
   sun: levelMinimum(58),
   bazaar: levelMinimum(10),
-  youtube: function() {
-    return game.resources.level.greaterOrEquals(20) &&
-      game.upgrades.socialMedia;
-  },
-  war: function() {
-    return game.resources.level.greaterOrEquals(40) &&
-      game.upgrades.youtube;
-  },
+  youtube: levelMinimum(20),
+  war: levelMinimum(40),
   pvpVideos: function() {
     return game.upgrades.youtube && game.upgrades.arena;
   },
@@ -884,48 +880,24 @@ var upgradeRequirements = {
   tc: wizardMinimum(50),
   luis: levelMinimum(75),
   ihateaz: levelMinimum(81),
-  sun2: function() {
-    return game.resources.level.greaterOrEquals(86) &&
-      game.upgrades.sun;
-  },
-  runLuis: function() {
-    return game.resources.level.greaterOrEquals(90) &&
-      game.upgrades.luis;
-  },
+  sun2: levelMinimum(86),
+  runLuis: levelMinimum(90),
   empire: function() {
     return game.resources.activePlayers.greaterOrEquals(game.resources.population);
   },
   wand: levelMinimum(15),
   bastion: levelMinimum(93),
-  shadow: function() {
-    return game.resources.level.greaterOrEquals(95) &&
-      game.upgrades.bastion;
-  },
+  shadow: levelMinimum(95),
   evil: function () {
     return game.upgrades.shadow;
   },
-  sea: function() {
-    return game.resources.level.greaterOrEquals(95) &&
-      game.upgrades.bastion;
-  },
+  sea: levelMinimum(95),
   ww: levelMinimum(60),
-  com1: function() {
-    return game.resources.level.greaterOrEquals(96) &&
-      game.upgrades.sea;
-  },
-  com2: function() {
-    return game.resources.level.greaterOrEquals(97) &&
-      game.upgrades.com1;
-  },
-  com3: function() {
-    return game.resources.level.greaterOrEquals(98) &&
-      game.upgrades.com2;
-  },
+  com1: levelMinimum(96),
+  com2: levelMinimum(97),
+  com3: levelMinimum(98),
   a1f: levelMinimum(45),
-  a2f: function() {
-    return game.resources.level.greaterOrEquals(100) &&
-      game.upgrades.com3;
-  },
+  a2f: levelMinimum(100),
   empire2: function() {
     return game.resources.activePlayers.divide(100).greaterOrEquals(game.resources.population);
   },
@@ -933,29 +905,14 @@ var upgradeRequirements = {
   tree: function() {
     return game.upgrades.a2f;
   },
-  dark: function() {
-    return game.resources.level.greaterOrEquals(100) &&
-      game.upgrades.ww && game.upgrades.a2f;
-  },
-  arena2: function() {
-    return game.resources.level.greaterOrEquals(65) &&
-      game.upgrades.arena;
-  },
-  arena3: function() {
-    return game.resources.level.greaterOrEquals(85) &&
-      game.upgrades.arena2;
-  },
-  arena4: function() {
-    return game.resources.level.greaterOrEquals(105) &&
-      game.upgrades.arena3;
-  },
+  dark: levelMinimum(100),
+  arena2: levelMinimum(65),
+  arena3: levelMinimum(85),
+  arena4: levelMinimum(105),
   antiTurtle: function() {
     return game.upgrades.arena2;
   },
-  luis3: function() {
-    return game.resources.level.greaterOrEquals(104) &&
-      game.upgrades.runLuis && game.upgrades.dark;
-  },
+  luis3: levelMinimum(104),
   luisTrivia: function() {
     return game.upgrades.runLuis && game.upgrades.trivia &&
       staffCount("trivia") >= 5;
@@ -966,29 +923,73 @@ var upgradeRequirements = {
   penguin: function() {
     return game.upgrades.graduate;
   },
-  the714: function() {
-    return game.resources.level.greaterOrEquals(102) &&
-      game.upgrades.penguin;
-  },
-  baba: function() {
-    return game.resources.level.greaterOrEquals(104) &&
-      game.upgrades.the714;
-  },
+  the714: levelMinimum(102),
+  baba: levelMinimum(104),
   darkHumor: function() {
     return game.upgrades.baba;
   },
-  arcanum: function() {
-    return game.resources.level.greaterOrEquals(106) &&
-      game.upgrades.baba;
-  },
+  arcanum: levelMinimum(106),
   synergy2: function() {
     return game.upgrades.arcanum;
   },
-  tsubasa: function() {
-    return game.upgrades.arcanum &&
-      game.resources.level.greaterOrEquals(108);
-  },
+  tsubasa: levelMinimum(108),
 };
+
+var dependentUpgrades = {
+  valor: ["bears", "party"],
+  weed: ["valor"],
+  winter: ["valor"],
+  goldFarm: ["winter"],
+  youtube: ["socialMedia"],
+  war: ["youtube"],
+  pvpVideos: ["youtube", "arena"],
+  sun2: ["sun"],
+  runLuis: ["luis"],
+  shadow: ["bastion"],
+  evil: ["shadow"],
+  sea: ["bastion"],
+  com1: ["sea"],
+  com2: ["com1"],
+  com3: ["com2"],
+  a2f: ["com3"],
+  tree: ["a2f"],
+  dark: ["ww", "a2f"],
+  arena2: ["arena"],
+  arena3: ["arena2"],
+  arena4: ["arena3"],
+  antiTurtle: ["arena2"],
+  luis3: ["runLuis", "dark"],
+  luisTrivia: ["runLuis", "trivia"],
+  graduate: ["a2f"],
+  penguin: ["graduate"],
+  the714: ["penguin"],
+  baba: ["the714"],
+  darkHumor: ["baba"],
+  arcanum: ["baba"],
+  synergy2: ["arcanum"],
+  tsubasa: ["arcanum"],
+}
+var defaultUpgrades = {};
+var upgradePaths = {};
+var availableUpgrades = {};
+function findUpgradePaths() {
+  for (var upgrade in upgradeNames) {
+    var dependencies = dependentUpgrades[upgrade];
+    if (dependencies === undefined)
+      defaultUpgrades[upgrade] = true;
+    else {
+      for (var i = 0; i < dependencies.length; ++i) {
+        var dependency = dependencies[i];
+        if (upgradePaths[dependency] === undefined)
+          upgradePaths[dependency] = [];
+        upgradePaths[dependency].push(upgrade);
+      }
+    }
+  }
+  for (var upgrade in defaultUpgrades) {
+    availableUpgrades[upgrade] = defaultUpgrades[upgrade];
+  }
+}
 
 var upgradePrices = {
   socialMedia: [resAmt("gold", 1500)],
@@ -1185,10 +1186,36 @@ function upgradeHTML(upgradeName, purchased) {
 
 function updateUpgrades() {
   var upgradeList = document.getElementById("upgrades");
-  for (var upgradeName in upgradeRequirements) {
+  for (var upgradeName in availableUpgrades) {
     if (game.upgrades[upgradeName] === undefined && upgradeRequirements[upgradeName]()) {
       upgradeList.innerHTML += upgradeHTML(upgradeName, false);
       game.upgrades[upgradeName] = 0;
+    }
+  }
+}
+
+function addChildrenToAvailableList(name) {
+  delete availableUpgrades[name];
+  // Add to available set upgrades that are unlocked
+  var children = upgradePaths[name];
+  if (children === undefined) return;
+  for (var i = 0; i < children.length; ++i) {
+    var child = children[i];
+    // We know this upgrade has at least 1 dependency.
+    var dependencies = dependentUpgrades[child];
+    console.log("Trying upgrade " + child + " with dependencies " + dependencies.join(" "));
+    var hasAll = dependencies.every(function(d) {
+      return game.upgrades[d] != 0;
+    });
+    if (hasAll && !game.upgrades[child]) {
+      availableUpgrades[child] = true;
+      console.log("Upgrade " + child + " unlocked");
+    } else {
+      console.log("Failed to unlock " + child);
+      var missing = dependencies.map(function(d) {
+        !game.upgrades[d]
+      });
+      console.log("Missing upgrades: " + missing.join(" "))
     }
   }
 }
@@ -1201,6 +1228,7 @@ function addUpgrade(name) {
   var unpurchasedEntry = document.getElementById("upgrade-" + name);
   unpurchasedEntry.remove();
   purchasedUpgradeList.innerHTML += upgradeHTML(name, true);
+  addChildrenToAvailableList(name);
 }
 
 function buyUpgrade(name) {
@@ -1664,6 +1692,7 @@ function tick() {
 function main() {
   var ver = document.getElementById("version");
   ver.innerHTML = "Clicker101 version " + VERSION + ", written by Uruwi. I am not related to KI.";
+  findUpgradePaths();
   try {
     load();
   } catch (e) {
