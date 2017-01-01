@@ -1465,7 +1465,7 @@ function recruitAutomatically(power, dt) {
   var players = getRandomArbitrary(0, power / 40) + getRandomArbitrary(0, power / 40);
   players = Math.ceil(dt * maxPersuaded(players));
   game.resources.activePlayers = game.resources.activePlayers.add(players);
-  game.hres.fact += Math.pow(power, 0.95) * dt * getRandomInt(1e-5, 1.5e-5);
+  game.hres.fact += Math.pow(players, 0.95) * getRandomInt(1e-5, 1.5e-5);
   if (game.hres.fact > 0) {
     logMessage("You feel that the game is becoming more popular.");
     game.hres.agr += getRandomInt(1, 6) * Math.floor(game.hres.fact);
